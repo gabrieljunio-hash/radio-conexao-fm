@@ -968,3 +968,6 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,
 @media(prefers-reduced-motion:reduce){
  *,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
 }
+
+.player .status,.player .track small{color:#c3c4d4}
+.sidebar .eyebrow,.hero .eyebrow,.full-eyebrow{color:#d5c9ff}
