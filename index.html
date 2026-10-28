@@ -101,7 +101,7 @@ async function loadLiveStations(){
    RADIO_STATIONS.push(station);seenIds.add(id);
    stationHealth[id]={ok:true,successes:Number(hs.successes)||0,failures:Number(hs.failures)||0,checkedAt:Date.parse(hs.checkedAt||"")||0,lastSuccess:Date.parse(hs.lastSuccess||"")||0,reason:hs.reason||""};
   }
-  // Rehidrata estaciones guardadas desde búsquedas externas para que los favoritos sigan disponibles tras recargar.
+  // Recupera rádios salvas em buscas externas para que os favoritos continuem disponíveis após recarregar.
   try{
    const saved=JSON.parse(localStorage.getItem("conexao-fm-favorite-stations")||"[]");
    if(Array.isArray(saved))for(const item of saved){
@@ -111,7 +111,7 @@ async function loadLiveStations(){
     const genre=String(item.genre||"Pop");
     const favicon=safeImageUrl(item.favicon||"");
     const cover=genre==="Sertanejo"?"corange":genre==="Flashback"?"cgold":genre==="Notícias"?"cblue":genre==="Gospel"?"cgreen":"cpink";
-    RADIO_STATIONS.push({id:item.id,name,city:String(item.city||"Brasil"),genre,tagline:String(item.tagline||"Rádio online"),streamUrl,favicon,cover,initials:String(item.initials||name.split(/\\s+/).slice(0,3).map(w=>w[0]).join("").toUpperCase().slice(0,5)),verified:false,homepageEligible:false,favoriteCount:0,rank:999999});
+    RADIO_STATIONS.push({id:item.id,name,city:String(item.city||"Brasil"),genre,tagline:String(item.tagline||"Rádio online"),streamUrl,favicon,cover,initials:String(item.initials||name.split(/\s+/).slice(0,3).map(w=>w[0]).join("").toUpperCase().slice(0,5)),verified:false,homepageEligible:false,favoriteCount:0,rank:999999});
     seenIds.add(item.id);
    }
   }catch{}
