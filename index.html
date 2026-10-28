@@ -9,7 +9,7 @@
 <meta name="description" content="Ouça rádios online, descubra estações por estilo e região e salve suas favoritas na Conexão FM.">
 <meta property="og:type" content="website"><meta property="og:site_name" content="Conexão FM"><meta property="og:title" content="Conexão FM — A música que conecta você"><meta property="og:description" content="Descubra rádios online, explore estilos musicais e encontre sua próxima estação favorita."><meta property="og:url" content="https://gabrieljunio-hash.github.io/radio-conexao-fm/"><meta name="twitter:card" content="summary">
 <title>Conexão FM — A música que conecta você</title>
-<link rel="stylesheet" href="assets/css/site.css?v=20261028-ux19">
+<link rel="stylesheet" href="assets/css/site.css?v=20261028-ux20">
 
 </head>
 <body>
@@ -20,7 +20,7 @@
 <div class="side-bottom"><span class="dot"></span><strong style="color:#eee">Rádio ligada, companhia garantida.</strong><br>Encontre sua próxima estação favorita.</div>
 </aside>
 <main class="main" id="inicio">
-<header class="top home-top is-home"><a class="mobile-brand" href="index.html" aria-label="Conexão FM — Início"><span class="brand-mark" aria-hidden="true">◖))</span></a><label class="search explore-search" id="exploreSearch" hidden><button type="button" class="search-submit" id="searchSubmit" aria-label="Pesquisar">⌕</button><input id="search" type="search" placeholder="Buscar rádio, cidade ou estilo..." aria-label="Buscar rádios"></label><nav class="top-genres" aria-label="Atalhos de gêneros"><button data-genre="Sertanejo">Sertanejo</button><button data-genre="Flashback">Flashback</button><button data-genre="Pop">Pop &amp; Hits</button></nav><button class="help" id="about" aria-label="Sobre" hidden>?</button></header>
+<header class="top home-top is-home"><a class="mobile-brand" href="index.html" aria-label="Conexão FM — Início"><span class="brand-mark" aria-hidden="true">◖))</span></a><label class="search explore-search" id="exploreSearch" hidden><button type="button" class="search-submit" id="searchSubmit" aria-label="Pesquisar">⌕</button><input id="search" type="search" placeholder="Buscar rádio, cidade ou estilo..." aria-label="Buscar rádios"></label><nav class="top-genres" aria-label="Atalhos de gêneros"><button data-genre="Sertanejo">Sertanejo</button><button data-genre="Flashback">Flashback</button><button data-genre="Pop">Pop &amp; Hits</button></nav><button class="share-button" type="button" data-share-site aria-label="Compartilhar Conexão FM" title="Compartilhar"><span class="share-icon" aria-hidden="true">↗</span><span class="share-label">Compartilhar</span></button><button class="help" id="about" aria-label="Sobre" hidden>?</button></header>
 <nav class="mobile-nav" aria-label="Navegação principal">
 <a class="active" href="index.html"><span aria-hidden="true">⌂</span> Início</a>
 <a class="" href="radios.html"><span aria-hidden="true">⌕</span> Explorar</a>
@@ -243,6 +243,26 @@ document.addEventListener("click",e=>{
 });
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!fullPlayer.hidden)closeFullPlayer()});
 const d=$("dialog"),open=()=>d.showModal();$("about").addEventListener("click",open);$("aboutFooter").addEventListener("click",open);$("close").addEventListener("click",()=>d.close());$("understood").addEventListener("click",()=>d.close());document.addEventListener("keydown",e=>{if(e.key==="/"&&!["INPUT","TEXTAREA"].includes(document.activeElement.tagName)){e.preventDefault();$("search").focus()}if(e.key==="Escape"&&d.open)d.close()});const params=new URLSearchParams(location.search);const requestedView=params.get("view");if(["inicio","explorar","favoritos"].includes(requestedView))view=requestedView;else if(location.pathname.endsWith("/radios.html"))view="explorar";else if(location.pathname.endsWith("/favoritos.html"))view="favoritos";if(params.has("q")){const q=params.get("q");genre=["Sertanejo","Flashback","Pop","Notícias","Gospel","Rock"].find(g=>g.toLocaleLowerCase("pt-BR")===q.toLocaleLowerCase("pt-BR"))||"";if(!genre){$("search").value=q;view="explorar";$("homeHero").hidden=true;}}const topHeader=document.querySelector(".home-top");if(topHeader)topHeader.classList.toggle("is-home",view==="inicio");$("homeHero").hidden=view!=="inicio";$("featuredSection").hidden=view!=="inicio";$("genreRailsSection").hidden=view!=="inicio";$("exploreSearch").hidden=view==="inicio";render();player();loadLiveStations().then(()=>{const params=new URLSearchParams(location.search);const requestedId=params.get("station");let lastId="";try{lastId=localStorage.getItem("conexao-fm-last-station")||""}catch{}const selected=RADIO_STATIONS.find(st=>st.id===requestedId&&st.streamUrl);const last=selected||RADIO_STATIONS.find(st=>st.id===lastId&&st.streamUrl);if(last){if(selected&&params.get("autoplay")==="1"){play(selected.id)}else{current=last;audio.src=last.streamUrl;$("playerName").textContent=last.name;$("playerMeta").textContent=last.city+" · "+last.genre;player();if(selected){$("player").scrollIntoView({behavior:"smooth",block:"center"});toast("Rádio selecionada. Toque em reproduzir para ouvir.")}}}});if($("search").value.trim().length>=2)searchRadioDirectory($("search").value.trim());
+})();
+</script>
+<script>
+(function(){
+ const button=document.querySelector('[data-share-site]');
+ if(!button)return;
+ const original=button.innerHTML;
+ button.addEventListener('click',async()=>{
+  const payload={title:document.title||'Conexão FM',text:'Ouça suas rádios favoritas na Conexão FM — A música que conecta você.',url:location.href};
+  if(navigator.share){
+   try{await navigator.share(payload);return}catch(error){if(error&&error.name==='AbortError')return}
+  }
+  try{
+   if(navigator.clipboard&&navigator.clipboard.writeText)await navigator.clipboard.writeText(payload.url);
+   else{const field=document.createElement('textarea');field.value=payload.url;field.setAttribute('readonly','');field.style.position='fixed';field.style.opacity='0';document.body.appendChild(field);field.select();const ok=document.execCommand('copy');field.remove();if(!ok)throw new Error('copy failed')}
+   button.innerHTML='<span class="share-icon" aria-hidden="true">✓</span><span class="share-label">Link copiado!</span>';
+   button.classList.add('copied');
+   window.setTimeout(()=>{button.innerHTML=original;button.classList.remove('copied')},2200);
+  }catch(error){window.prompt('Copie o link da Conexão FM:',payload.url)}
+ });
 })();
 </script>
 </body></html>
