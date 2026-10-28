@@ -120,3 +120,5 @@ input[type=range]{accent-color:var(--purple);cursor:pointer}
 @media(prefers-reduced-motion:reduce){
   *,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
 }
+
+.privacy-copy{max-width:850px;color:#d0cde0;line-height:1.8}.privacy-copy h2{font:700 24px Manrope;color:#f7f6ff;margin:0 0 8px}.privacy-copy h3{font:700 16px Manrope;color:#e9e3ff;margin:28px 0 8px}.privacy-copy p{font-size:13px;margin:8px 0 16px}.privacy-copy a{color:#c7b5ff;text-decoration:underline;text-underline-offset:3px}
