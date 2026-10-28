@@ -19,7 +19,7 @@ Site estático responsivo para descobrir e ouvir rádios online, sem APIs pagas,
 - Política de privacidade atualizada para os recursos atuais
 - Acessibilidade: foco de teclado visível e suporte a movimento reduzido
 - Manifesto web para facilitar a instalação em dispositivos compatíveis
-- Catálogo manual, sem serviços pagos
+- Catálogo comunitário Radio Browser com carregamento dinâmico de estações verificadas quando disponíveis
 
 ## Publicar com GitHub Pages
 1. Abra **Settings → Pages** neste repositório.
@@ -33,4 +33,4 @@ A página inicial consulta o diretório comunitário Radio Browser para carregar
 ## Adicionar transmissões próprias
 No arquivo `index.html`, procure `const RADIO_STATIONS`. Em cada estação manual, troque `streamUrl:""` por um endereço direto de áudio autorizado pela emissora. Links para páginas comuns não funcionam como stream. Algumas estações bloqueiam reprodução externa; use HTTPS sempre que possível.
 
-As estações demonstrativas iniciais ainda não têm áudio configurado; as estações reais são carregadas do diretório quando a página abre. Os favoritos ficam salvos localmente no navegador do dispositivo atual e não sincronizam automaticamente entre aparelhos.
+As estações demonstrativas iniciais ainda não têm áudio configurado; as estações reais são carregadas do diretório quando a página abre. Os favoritos ficam salvos localmente no navegador do dispositivo atual e não sincronizam automaticamente entre aparelhos. A página de favoritos usa `noindex` porque o conteúdo é pessoal e local ao dispositivo.
