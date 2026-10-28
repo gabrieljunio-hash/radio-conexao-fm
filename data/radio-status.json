@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": null,
+  "checkIntervalMinutes": 30,
+  "source": "Radio Browser",
+  "stations": [],
+  "note": "Gerado automaticamente por GitHub Actions. Estações são ordenadas pela saúde do stream."
+}
