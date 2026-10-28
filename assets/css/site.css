@@ -39,3 +39,18 @@ body.player-expanded{overflow:hidden}
 .search:focus-within{border-color:#b7a2ff;box-shadow:0 0 0 3px #a78bfa30;background:#211f32}
 .search input:focus{outline:none}
 @media(max-width:740px){.top{margin:0 -14px;padding:0 14px}}
+
+/* Barra de pesquisa: mais clara, espaçosa e confortável no celular */
+.top .search{flex:1;min-width:0;max-width:760px;height:48px;padding:0 16px;gap:12px;border-radius:14px;background:#191827;border:1px solid #39354f;box-shadow:inset 0 1px 0 #ffffff05}
+.top .search b{font-size:25px;line-height:1;color:#b7a2ff;flex:0 0 auto}
+.top .search input{font-size:14px;line-height:1.4;min-width:0}
+.top .search input::placeholder{color:#918da8;opacity:1}
+.top .search:hover{border-color:#71619f;background:#1d1b2d}
+.top .search:focus-within{border-color:#ad98ff;background:#211e34;box-shadow:0 0 0 3px #a78bfa24,0 8px 24px #0002}
+@media(max-width:740px){
+ .top{gap:9px;min-height:76px;height:auto;padding-top:10px;padding-bottom:10px;flex-wrap:wrap}
+ .top .mobile-brand{display:flex;align-items:center;white-space:nowrap;font-size:13px}
+ .top .search{order:2;flex:1 1 100%;max-width:none;height:46px;margin:0}
+ .top .search input{font-size:16px}
+ .top .help{display:none}
+}
