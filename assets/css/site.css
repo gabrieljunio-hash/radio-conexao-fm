@@ -867,3 +867,8 @@ body{background:var(--bg);color:var(--text)}
 }
 
 .favorite-actions{display:flex;align-items:center;gap:8px}.favorite-actions .play{display:grid;place-items:center}.favorite-actions .remove-favorite{min-width:38px;height:38px;border:1px solid var(--line);border-radius:10px;color:var(--muted);background:transparent;cursor:pointer}.favorite-actions .remove-favorite:hover{color:#ff765e;border-color:#ff765e}
+
+/* Favoritos: miniaturas de logotipos com fallback legível */
+.cover .favorite-thumb{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;padding:10px;background:#fff;z-index:1}
+.cover.has-image:before{display:none}
+.cover.has-image strong{display:none}
