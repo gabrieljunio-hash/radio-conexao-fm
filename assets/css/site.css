@@ -827,3 +827,29 @@ body{background:var(--bg);color:var(--text)}
  .main .top.home-top.is-home .top-genres{gap:4px}
  .main .top.home-top.is-home .top-genres button{padding:6px 7px;font-size:9px}
 }
+
+
+/* Corrige sobreposição da busca no modo Explorar em telas pequenas */
+@media(max-width:740px){
+  .main .top.home-top:not(.is-home){
+    height:auto;
+    min-height:0;
+    flex-wrap:wrap;
+    align-content:center;
+    padding-top:9px;
+    padding-bottom:10px;
+    gap:8px;
+  }
+  .main .top.home-top:not(.is-home) .explore-search{
+    order:2;
+    flex:1 1 100%;
+    width:100%;
+    max-width:none;
+    min-width:0;
+    height:44px;
+    margin:0;
+  }
+  .main .top.home-top:not(.is-home) .mobile-brand{
+    order:1;
+  }
+}
