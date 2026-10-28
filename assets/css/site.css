@@ -971,3 +971,54 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,
 
 .player .status,.player .track small{color:#c3c4d4}
 .sidebar .eyebrow,.hero .eyebrow,.full-eyebrow{color:#d5c9ff}
+
+
+/* Acessibilidade ampliada — ux22 (WCAG 2.2 AA como referência) */
+:root{--muted:#4f5b72;--line:#17213a2e;font-size:100%}
+html{font-size:100%;scroll-padding-top:1rem}
+body{font-size:17px;line-height:1.65}
+p,li{line-height:1.75}
+small,.small,.status,.tags span,.station-info small,.info small,.genre small,.side-label,.eyebrow{font-size:14px;line-height:1.5}
+button,input,select,textarea{font-size:inherit}
+button,a,input,select,textarea{touch-action:manipulation}
+button:not(.icon-only),.primary,.plain,.share-button{min-height:44px}
+button.icon-only,.help,.search-submit,.play,.bigplay,.controls button,.buttons button,.cover button{min-width:44px;min-height:44px}
+.nav a,.nav button,.nav-link,.mobile-nav a,.cat{min-height:48px;display:flex;align-items:center;gap:8px;font-size:15px}
+.nav a span,.nav button span,.cat span{width:30px;min-width:30px;font-size:22px;line-height:1.2;text-align:center}
+.search b,.share-icon{font-size:22px;line-height:1}
+.genre .gicon{font-size:34px;line-height:1.2}
+.genre strong,.info strong{font-size:16px;line-height:1.45}
+.tags span{font-size:12px}
+.status{font-size:13px}
+.sidebar .brand small{font-size:12px;color:#d1d1df}
+.sidebar .side-label{font-size:12px;color:#d0cede}
+.sidebar .side-bottom{font-size:13px;color:#d0cede}
+input,textarea,select{font-size:16px}
+input::placeholder,textarea::placeholder{opacity:1;color:#626b7e}
+:where(a,button,input,select,textarea,[tabindex]):focus-visible{outline:3px solid #a93628!important;outline-offset:3px!important;box-shadow:0 0 0 3px #fff!important}
+a{text-underline-offset:3px}
+@media(max-width:740px){
+ body{font-size:17px}
+ .main{padding-left:16px;padding-right:16px}
+ .heading h2{font-size:22px;line-height:1.35}
+ .info strong,.genre strong{font-size:16px}
+ .station-info small,.info small,.genre small{font-size:14px}
+ .tags span{font-size:12px}
+ .status{font-size:13px}
+ .mobile-brand{font-size:15px}
+ .main .top .share-button{min-height:44px;font-size:13px}
+ .main .top.home-top.is-home .top-genres button{min-height:44px;font-size:12px;padding:8px}
+ .genre{padding:14px;min-height:132px}
+}
+@media(max-width:390px){
+ .main{padding-left:12px;padding-right:12px}
+ .mobile-brand{font-size:14px}
+ .main .top .share-button{min-width:44px;min-height:44px}
+ .genre{min-height:124px;padding:12px}
+ .genre strong{font-size:15px}
+ .genre small{font-size:13px}
+}
+@media(forced-colors:active){
+ button,a,input,select,textarea{forced-color-adjust:auto}
+ :where(a,button,input,select,textarea,[tabindex]):focus-visible{outline:3px solid Highlight!important}
+}
