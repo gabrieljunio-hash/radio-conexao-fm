@@ -9,7 +9,7 @@
 <meta name="description" content="Ouça rádios online, descubra estações por estilo e região e salve suas favoritas na Conexão FM.">
 <meta property="og:type" content="website"><meta property="og:site_name" content="Conexão FM"><meta property="og:title" content="Conexão FM — A música que conecta você"><meta property="og:description" content="Descubra rádios online, explore estilos musicais e encontre sua próxima estação favorita."><meta property="og:url" content="https://gabrieljunio-hash.github.io/radio-conexao-fm/"><meta name="twitter:card" content="summary">
 <title>Conexão FM — A música que conecta você</title>
-<link rel="stylesheet" href="assets/css/site.css?v=20261028-ux14">
+<link rel="stylesheet" href="assets/css/site.css?v=20261028-ux15">
 
 </head>
 <body>
@@ -212,7 +212,7 @@ function setAppView(next,updateUrl=true){
  document.querySelectorAll(".mobile-nav a").forEach(a=>{const href=a.getAttribute("href");const active=next==="inicio"?href==="index.html":next==="explorar"?href==="radios.html":href==="favoritos.html";a.classList.toggle("active",active);if(active)a.setAttribute("aria-current","page");else a.removeAttribute("aria-current")});
  document.querySelectorAll(".sidebar .nav a").forEach(a=>{const href=a.getAttribute("href");a.classList.toggle("active",next==="inicio"?href==="index.html":next==="explorar"?href==="radios.html":href==="favoritos.html")});
  if(updateUrl){const path=next==="inicio"?"index.html":next==="explorar"?"radios.html":"favoritos.html";history.pushState({conexaoView:next},"",path)}
- render();window.scrollTo({top:0,left:0,behavior:"instant"});
+ render();window.scrollTo(0,0);
 }
 document.addEventListener("click",e=>{
  const nav=e.target.closest('a[href="index.html"],a[href="radios.html"],a[href="favoritos.html"]');
