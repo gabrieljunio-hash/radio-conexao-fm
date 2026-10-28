@@ -68,7 +68,37 @@ function player(){let playing=!audio.paused&&!audio.ended;const status=playing?"
 function play(id){let s=RADIO_STATIONS.find(x=>x.id===id);if(!s)return;if(!s.streamUrl){current=s;$("playerName").textContent=s.name;$("playerMeta").textContent=s.city+" · "+s.genre;$("playerCover").textContent=s.initials;player();toast("Esta rádio ainda não tem stream configurado. Edite RADIO_STATIONS no arquivo index.html.");return}if(current?.id===id&&!audio.paused){audio.pause();player();return}current=s;$("playerName").textContent=s.name;$("playerMeta").textContent=s.city+" · "+s.genre;$("playerCover").textContent=s.initials;clearTimeout(playCheckTimer);audio.src=s.streamUrl;playCheckTimer=setTimeout(()=>{if(current?.id===s.id&&!audio.paused){markStation(s.id,false,"timeout");toast(s.name+" não confirmou áudio em 12 segundos e foi movida para baixo na lista.")}},12000);audio.play().then(()=>{player();toast("Testando transmissão: "+s.name)}).catch(()=>{clearTimeout(playCheckTimer);markStation(s.id,false,"play-rejected");player();toast("Falha ao iniciar "+s.name+"; ela foi movida para baixo na lista.")});player()}
 function fav(id){let s=RADIO_STATIONS.find(x=>x.id===id);if(!s)return;if(favorites.includes(id)){favorites=favorites.filter(x=>x!==id);toast(s.name+" removida dos favoritos")}else{favorites.push(id);toast(s.name+" adicionada aos favoritos")}try{localStorage.setItem("conexao-fm-favorites",JSON.stringify(favorites));let saved=JSON.parse(localStorage.getItem("conexao-fm-favorite-stations")||"[]");saved=saved.filter(x=>x.id!==id);if(favorites.includes(id))saved.push({id:s.id,name:s.name,city:s.city,genre:s.genre,tagline:s.tagline,initials:s.initials,cover:s.cover,favicon:s.favicon||"",streamUrl:s.streamUrl});localStorage.setItem("conexao-fm-favorite-stations",JSON.stringify(saved))}catch{}render();$("favCurrent").textContent=current&&favorites.includes(current.id)?"♥":"♡"}
 grid.addEventListener("click",e=>{let f=e.target.closest("[data-fav]"),p=e.target.closest("[data-play]");if(f)fav(f.dataset.fav);if(p)play(p.dataset.play)});
-$("search").addEventListener("input",()=>{view="explorar";genre="";render()});$("clear").addEventListener("click",()=>{$("search").value="";genre="";view="explorar";render()});$("explore").addEventListener("click",()=>{view="explorar";genre="";$("stationSection").scrollIntoView({behavior:"smooth"});render()});$("all").addEventListener("click",()=>{genre="";$("search").value="";view="explorar";render()});
+let searchTimer=null,searchRequest=0;
+async function searchRadioDirectory(query){
+ const term=String(query||"").trim();if(term.length<2)return;
+ const requestId=++searchRequest;
+ const url="https://de1.api.radio-browser.info/json/stations/search?name="+encodeURIComponent(term)+"&hidebroken=false&is_https=true&order=clickcount&reverse=true&limit=60";
+ try{
+  const response=await fetch(url,{headers:{"Accept":"application/json"}});if(!response.ok)throw new Error("Busca indisponível");
+  const rows=await response.json();if(requestId!==searchRequest||$("search").value.trim()!==term)return;
+  let added=0;
+  for(const st of rows){
+   const name=String(st.name||"").trim(),stream=st.url_resolved||st.url;let streamUrl="";
+   try{const parsed=new URL(stream);if(parsed.protocol==="https:")streamUrl=parsed.href}catch{}
+   if(!name||!streamUrl||Number(st.hls)===1||Number(st.bitrate)>320)continue;
+   const key=name.toLocaleLowerCase("pt-BR");if(RADIO_STATIONS.some(s=>s.name.toLocaleLowerCase("pt-BR")===key))continue;
+   const tags=String(st.tags||"").toLocaleLowerCase("pt-BR"),match=tags+" "+name.toLowerCase();let g="Pop";
+   if(/sertanej|country|caipira|forro|forró|brega/.test(match))g="Sertanejo";
+   else if(/flashback|oldies|80s|90s|nostalgia|disco/.test(match))g="Flashback";
+   else if(/news|noticia|notícia|jornal|talk|information/.test(match))g="Notícias";
+   else if(/gospel|christian|evangel|worship/.test(match))g="Gospel";
+   else if(/rock|metal|punk|alternative/.test(match))g="Rock";
+   else if(/jazz|blues|soul/.test(match))g="Jazz & Blues";
+   else if(/classical|orchestra|opera/.test(match))g="Clássica";
+   else if(/electronic|techno|house|dance|trance/.test(match))g="Eletrônica";
+   else if(/latin|salsa|bachata|reggaeton|cumbia/.test(match))g="Latina";
+   const id="rb-"+(st.stationuuid||encodeURIComponent(name));
+   RADIO_STATIONS.push({id,name,city:[st.state,st.country].filter(Boolean).join(", ")||"Internacional",genre:g,tagline:tags.split(",").filter(Boolean).slice(0,2).join(" · ")||"Rádio online",streamUrl,favicon:safeImageUrl(st.favicon||st.logo||""),cover:g==="Sertanejo"?"corange":g==="Flashback"?"cgold":g==="Notícias"?"cblue":g==="Gospel"?"cgreen":"cpink",initials:name.split(/\s+/).slice(0,3).map(w=>w[0]).join("").toUpperCase().slice(0,5)});added++;
+  }
+  render();if(added)toast("Encontrei "+added+" novas rádios para sua busca");
+ }catch(error){console.warn("Busca remota de rádios:",error)}
+}
+$("search").addEventListener("input",()=>{view="explorar";genre="";render();clearTimeout(searchTimer);const q=$("search").value.trim();if(q.length>=2)searchTimer=setTimeout(()=>searchRadioDirectory(q),450);else searchRequest++});$("clear").addEventListener("click",()=>{$("search").value="";genre="";view="explorar";render()});$("explore").addEventListener("click",()=>{view="explorar";genre="";$("stationSection").scrollIntoView({behavior:"smooth"});render()});$("all").addEventListener("click",()=>{genre="";$("search").value="";view="explorar";render()});
 document.querySelectorAll("[data-view]").forEach(b=>b.addEventListener("click",()=>{view=b.dataset.view;if(view==="inicio"){genre="";$("search").value=""}if(view!=="inicio")$("stationSection").scrollIntoView({behavior:"smooth"});render()}));
 document.querySelectorAll("[data-genre]").forEach(b=>b.addEventListener("click",()=>{view="explorar";genre=genre===b.dataset.genre?"":b.dataset.genre;$("search").value="";$("stationSection").scrollIntoView({behavior:"smooth"});render()}));
 $("toggle").addEventListener("click",()=>{if(!current){toast("Escolha uma rádio no catálogo para começar");return}if(!current.streamUrl){toast("Esta rádio ainda não tem stream configurado. Edite RADIO_STATIONS no index.html.");return}if(audio.paused)audio.play().then(player).catch(()=>toast("Falha ao iniciar a transmissão"));else audio.pause();player()});$("stop").addEventListener("click",()=>{audio.pause();audio.currentTime=0;player()});$("mute").addEventListener("click",()=>{audio.muted=!audio.muted;$("mute").style.color=audio.muted?"#b7a2ff":""});$("volume").addEventListener("input",e=>{audio.volume=Number(e.target.value);audio.muted=false;$("volumeText").textContent=Math.round(audio.volume*100)+"%"});audio.volume=.8;["play","pause","waiting","ended"].forEach(e=>audio.addEventListener(e,player));audio.addEventListener("playing",()=>{clearTimeout(playCheckTimer);if(current?.streamUrl)markStation(current.id,true,"playing");player()});audio.addEventListener("error",()=>{clearTimeout(playCheckTimer);if(current){markStation(current.id,false,"audio-error");$( "status").textContent="Transmissão indisponível";toast("A rádio "+current.name+" falhou e foi movida para baixo na lista. Tente outra estação.")}});$("favCurrent").addEventListener("click",()=>current&&fav(current.id));
