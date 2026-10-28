@@ -1144,3 +1144,7 @@ a{text-underline-offset:3px}
   .player .buttons .transport{width:24px!important;min-width:24px!important;flex-basis:24px!important}
   .player .bigplay{width:34px!important;min-width:34px!important;height:34px!important;min-height:34px!important;flex-basis:34px!important}
 }
+
+
+/* Hide mute control from expanded player; volume is handled separately */
+.fullscreen-player #fullMute{display:none!important}
