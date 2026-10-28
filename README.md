@@ -24,7 +24,10 @@ Site estático responsivo para descobrir e ouvir rádios online, sem APIs pagas,
 3. Selecione a branch **main** e a pasta **/(root)** e salve.
 4. Aguarde alguns minutos e abra o endereço exibido na tela do Pages.
 
-## Adicionar transmissões reais
-No arquivo `index.html`, procure `const RADIO_STATIONS`. Em cada estação, troque `streamUrl:""` por um endereço direto de áudio autorizado pela emissora. Links para páginas comuns não funcionam como stream. Algumas estações bloqueiam reprodução externa; use HTTPS sempre que possível.
+## Catálogo de rádios online
+A página inicial consulta o diretório comunitário Radio Browser para carregar estações brasileiras com streams listados como ativos. O diretório é gratuito e não exige chave de API, mas é um serviço de terceiros: pode ficar indisponível e algumas transmissões podem falhar, mudar de endereço ou bloquear reprodução no navegador.
 
-**Importante:** o catálogo atual é demonstrativo e ainda não tem streams configurados. Não há APIs pagas nem transmissões reais incluídas neste momento. Os favoritos ficam salvos localmente no navegador do dispositivo atual e não sincronizam automaticamente entre aparelhos.
+## Adicionar transmissões próprias
+No arquivo `index.html`, procure `const RADIO_STATIONS`. Em cada estação manual, troque `streamUrl:""` por um endereço direto de áudio autorizado pela emissora. Links para páginas comuns não funcionam como stream. Algumas estações bloqueiam reprodução externa; use HTTPS sempre que possível.
+
+As estações demonstrativas iniciais ainda não têm áudio configurado; as estações reais são carregadas do diretório quando a página abre. Os favoritos ficam salvos localmente no navegador do dispositivo atual e não sincronizam automaticamente entre aparelhos.
