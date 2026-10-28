@@ -8,13 +8,16 @@ Site estático responsivo para descobrir e ouvir rádios online, sem APIs pagas,
 - `favoritos.html`: lista dos favoritos salvos neste navegador.
 - `sobre.html`: informações sobre o projeto.
 - `indicar.html`: formulário que prepara uma mensagem para enviar pelo WhatsApp.
+- `privacidade.html`: explica o armazenamento local e o uso de serviços externos.
 
 ## Recursos
 - Layout para celular e computador
 - Busca no catálogo e categorias
 - Favoritos salvos localmente no navegador
 - Player com play/pause, parar, mute e volume
-- Metadados SEO por página, `robots.txt` e `sitemap.xml`
+- Metadados SEO por página, `robots.txt`, `sitemap.xml` e Open Graph
+- Política de privacidade atualizada para os recursos atuais
+- Acessibilidade: foco de teclado visível e suporte a movimento reduzido
 - Manifesto web para facilitar a instalação em dispositivos compatíveis
 - Catálogo manual, sem serviços pagos
 
