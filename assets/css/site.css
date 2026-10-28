@@ -872,3 +872,44 @@ body{background:var(--bg);color:var(--text)}
 .cover .favorite-thumb{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;padding:10px;background:#fff;z-index:1}
 .cover.has-image:before{display:none}
 .cover.has-image strong{display:none}
+
+/* Contraste visual e compartilhamento — ux20 */
+:root{--muted:#59657c;--line:#17213a24}
+.main .top{background:rgba(245,244,239,.96);border-bottom:1px solid #17213a18;box-shadow:0 4px 18px #17213a0a}
+.main .top .share-button{flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;gap:7px;min-width:40px;min-height:40px;padding:0 13px;border:1px solid #17213a26;border-radius:12px;background:#fff;color:#17213a;font-size:12px;font-weight:700;white-space:nowrap;box-shadow:0 2px 5px #17213a08;transition:background .15s,border-color .15s,transform .15s}
+.main .top .share-button:hover{background:#fff0ec;border-color:#ff765e;color:#a93628}
+.main .top .share-button:focus-visible{outline:3px solid #ff765e66;outline-offset:2px}
+.main .top .share-button.copied{background:#e6f7ef;border-color:#18a879;color:#116b4d}
+.share-icon{font-size:17px;line-height:1;font-weight:800}
+.main .top.home-top .share-button{margin-left:auto}
+.main .top:not(.home-top) .share-button{margin-left:0}
+.main .top:not(.home-top) .share-button+.help{margin-left:0}
+@media(max-width:740px){
+ .main .top .share-button{min-height:38px;padding:0 10px;border-radius:11px;gap:5px;font-size:11px}
+ .main .top.home-top .share-button{margin-left:0}
+ .main .top.home-top.is-home .top-genres{flex:1 1 0;min-width:0}
+ .main .top.home-top.is-home .top-genres button{padding:6px 7px;font-size:9px}
+}
+@media(max-width:390px){
+ .main .top .share-button{width:38px;min-width:38px;padding:0}
+ .main .top .share-label{display:none}
+ .main .top.home-top.is-home .top-genres{overflow:hidden}
+}
+@media(min-width:741px){
+ .main .top .share-button{margin-left:auto}
+ .main .top.home-top .top-genres{margin-right:0}
+}
+/* Mais separação entre blocos, cartões e títulos sem perder a paleta clara */
+.main .heading h2,.main .featured-heading strong{color:#17213a}
+.main .heading h2{letter-spacing:-.45px}
+.main .section:not(.recent-section){border-radius:18px}
+.main .stations .station,.main .recent-stations .station{border-color:#17213a20;box-shadow:0 5px 18px #17213a08}
+.main .stations .station:hover,.main .recent-stations .station:hover{border-color:#ff765e80;box-shadow:0 9px 24px #17213a12}
+.main .station .info small,.main .note,.main .footer{color:#59657c}
+.main .top-genres button{border-color:#17213a22;box-shadow:0 2px 5px #17213a08}
+.main .top-genres button:focus-visible,.main .plain:focus-visible,.main a:focus-visible{outline:2px solid #ff765e;outline-offset:3px}
+.main .featured-section{border:1px solid #17213a1a;border-radius:18px;padding:18px;background:linear-gradient(135deg,#fff 0%,#fff8f5 100%);box-shadow:0 8px 24px #17213a08}
+.main .featured-heading{margin-bottom:12px}
+.main .featured-live-dot{box-shadow:0 0 0 4px #18a87920}
+.main .recent-section{border:1px solid #17213a1c;border-radius:18px;padding:18px;background:#fff;box-shadow:0 8px 24px #17213a08}
+@media(max-width:740px){.main .featured-section,.main .recent-section{padding:13px;border-radius:15px}}
