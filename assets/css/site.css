@@ -607,3 +607,62 @@ dialog button.close{color:#e76652}
   .home-welcome p{font-size:10px}
   .welcome-explore{padding:8px;font-size:9px}
 }
+
+
+/* Minimal homepage pass: compact recent stations and less supporting copy */
+.home-welcome{margin:12px 0 0;padding:0;min-height:0}
+.home-welcome h1{font-size:24px;letter-spacing:-.8px}
+.home-welcome p{display:none}
+.welcome-explore{padding:8px 11px;border-radius:999px}
+.recent-section{margin-top:20px}
+.recent-section .heading{margin-bottom:10px}
+.recent-section .heading h2,.section .heading h2{margin-top:0;font-size:18px}
+.recent-stations{
+ display:flex;gap:9px;overflow-x:auto;overflow-y:hidden;
+ margin:0 -2px;padding:0 2px 6px;scroll-snap-type:x mandatory;
+ overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;scrollbar-width:thin;
+}
+.recent-station{
+ flex:0 0 220px;display:flex;gap:9px;padding:8px;min-height:64px;
+ border:1px solid #e8eaf0;border-radius:13px;background:#fff;
+ box-shadow:0 2px 8px #17213a05;scroll-snap-align:start;
+}
+.recent-cover{width:44px;height:44px;flex-basis:44px;border-radius:9px;background:#f2f3f7}
+.recent-cover .recent-logo{background:#f2f3f7;padding:3px}
+.recent-info{align-self:center}
+.recent-info strong{font-size:11px;color:#20283a;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;white-space:normal;overflow:hidden}
+.recent-info small{display:none}
+.recent-play{width:30px;height:30px;flex-basis:30px;font-size:12px;background:#fff0ec;color:#cf5542;border:0}
+.featured-section{margin-top:18px;padding:13px 14px;gap:9px;box-shadow:none}
+.featured-heading{gap:8px}
+.featured-heading strong{font-size:12px}
+.featured-heading small,.featured-live-label{display:none}
+.featured-live-dot{width:6px;height:6px;box-shadow:none}
+.featured-kicker,.featured-state{display:none}
+.featured-copy{gap:3px}
+.featured-copy>small{font-size:9px}
+.section{margin-top:24px}
+.heading{margin-bottom:12px}
+.genre{min-height:96px;padding:13px}
+.genre .gicon{margin-bottom:9px}
+.genre small{display:none}
+.note{display:none}
+#dataSaver{display:none}
+@media(max-width:740px){
+ .home-welcome{margin:13px 2px 0}
+ .home-welcome h1{font-size:21px}
+ .welcome-explore{padding:8px 10px;font-size:10px}
+ .recent-section{margin-top:17px}
+ .recent-stations{margin:0 -14px;padding:0 14px 6px;gap:8px}
+ .recent-station{flex:0 0 190px;padding:7px;min-height:58px;border-radius:12px}
+ .recent-cover{width:40px;height:40px;flex-basis:40px}
+ .recent-play{width:28px;height:28px;flex-basis:28px}
+ .featured-section{margin-top:15px;padding:11px;border-radius:14px;gap:8px}
+ .featured-cover{width:48px;height:48px;flex-basis:48px;border-radius:10px}
+ .featured-play{width:36px;height:36px;flex-basis:36px}
+ .section{margin-top:21px}
+ .section .heading h2,.recent-section .heading h2{font-size:16px}
+ .genre{min-height:75px;padding:11px;border-radius:12px}
+ .genre .gicon{width:29px;height:29px;font-size:18px;margin-bottom:6px}
+ .genre strong{font-size:12px}
+}
