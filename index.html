@@ -9,7 +9,7 @@
 <meta name="description" content="Ouça rádios online, descubra estações por estilo e região e salve suas favoritas na Conexão FM.">
 <meta property="og:type" content="website"><meta property="og:site_name" content="Conexão FM"><meta property="og:title" content="Conexão FM — A música que conecta você"><meta property="og:description" content="Descubra rádios online, explore estilos musicais e encontre sua próxima estação favorita."><meta property="og:url" content="https://gabrieljunio-hash.github.io/radio-conexao-fm/"><meta name="twitter:card" content="summary">
 <title>Conexão FM — A música que conecta você</title>
-<link rel="stylesheet" href="assets/css/site.css">
+<link rel="stylesheet" href="assets/css/site.css?v=20261028-ux1">
 
 </head>
 <body>
@@ -21,6 +21,11 @@
 </aside>
 <main class="main" id="inicio">
 <header class="top"><a class="mobile-brand" href="index.html"><span>◖))</span> conexão<span>fm</span></a><label class="search"><button type="button" class="search-submit" id="searchSubmit" aria-label="Pesquisar">⌕</button><input id="search" type="search" placeholder="Buscar rádio, cidade ou estilo..." aria-label="Buscar rádios"></label><a class="help" href="favoritos.html" aria-label="Meus favoritos" style="display:grid;place-items:center">♡</a><button class="help" id="about" aria-label="Sobre">?</button></header>
+<nav class="mobile-nav" aria-label="Navegação principal">
+<a class="active" href="index.html"><span aria-hidden="true">⌂</span> Início</a>
+<a class="" href="radios.html"><span aria-hidden="true">⌕</span> Explorar</a>
+<a class="" href="favoritos.html"><span aria-hidden="true">♡</span> Favoritos</a>
+</nav>
 <section class="hero" id="homeHero"><div class="hero-copy"><div class="eyebrow"><span class="dot"></span> SUA ESTAÇÃO, SEU MOMENTO</div><h1>O mundo toca<br>melhor <em>com você.</em></h1><p>Descubra rádios, relembre clássicos e encontre a trilha sonora do seu dia.</p><button class="primary" id="explore">Explorar estações <span>→</span></button></div><div class="art" aria-hidden="true"><div class="orbit"></div><div class="orbit two"></div><div class="vinyl"><i>CFM</i></div></div></section>
 <section class="section" id="homeGenres"><div class="heading"><div><div class="eyebrow muted">ESCOLHA SEU CLIMA</div><h2>O que você quer ouvir?</h2></div></div><div class="genres"><button class="genre g1" data-genre="Sertanejo"><span class="gicon">♫</span><strong>Sertanejo</strong><small>Do modão ao atual</small></button><button class="genre g2" data-genre="Flashback"><span class="gicon">◷</span><strong>Flashback</strong><small>Memórias em cada música</small></button><button class="genre g3" data-genre="Pop"><span class="gicon">✳</span><strong>Pop & Hits</strong><small>Os sons do momento</small></button><button class="genre g4" data-genre="Notícias"><span class="gicon">◉</span><strong>Notícias</strong><small>Informação ao vivo</small></button></div></section>
 <section class="section" id="stationSection"><div class="heading"><div><div class="eyebrow muted" id="eyebrow">SINTONIZE AGORA</div><h2 id="listTitle">Rádios para descobrir</h2></div><div class="station-actions"><button class="plain data-saver-toggle" id="dataSaver" type="button" aria-pressed="false">Economia de dados: desligada</button><button class="plain" id="all">Ver todas →</button></div></div><div class="stations" id="stations"></div><div class="empty" id="empty" hidden><h3>Nenhuma rádio encontrada</h3><p>Tente outro nome, cidade ou estilo.</p><button class="plain" id="clear">Limpar busca</button></div><p class="note">As rádios são carregadas de um diretório comunitário gratuito. A verificação registra quais transmissões funcionam, sem mudar a posição das rádios durante sua navegação. A disponibilidade pode variar. Dica para dados móveis: o áudio é o maior consumo — aproximadamente 29 MB/h a 64 kbps, 58 MB/h a 128 kbps e 144 MB/h a 320 kbps. O modo Economia reduz imagens e prioriza buscas por streams de até 64 kbps quando a informação está disponível, mas não comprime transmissões já cadastradas.</p></section>
