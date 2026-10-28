@@ -666,3 +666,68 @@ dialog button.close{color:#e76652}
  .genre .gicon{width:29px;height:29px;font-size:18px;margin-bottom:6px}
  .genre strong{font-size:12px}
 }
+
+
+/* Homepage refinement 2026-10-28: use dedicated pages for search and favorites */
+.main#inicio .top .search,
+.main#inicio .top a.help[href="favoritos.html"]{
+  display:none!important;
+}
+.main#inicio .top{
+  justify-content:flex-end;
+}
+.main#inicio .recent-stations{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:10px;
+  margin:0;
+  padding:0;
+  overflow:visible;
+}
+.main#inicio .recent-station{
+  width:auto;
+  min-width:0;
+  flex:initial;
+  gap:8px;
+  padding:9px;
+}
+.main#inicio .recent-cover{
+  width:42px;
+  height:42px;
+  flex-basis:42px;
+}
+.main#inicio .recent-info strong{
+  overflow-wrap:anywhere;
+}
+@media(max-width:740px){
+  .main#inicio .recent-stations{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:8px;
+  }
+  .main#inicio .recent-station{
+    gap:7px;
+    padding:8px;
+    min-height:58px;
+  }
+  .main#inicio .recent-cover{
+    width:34px;
+    height:34px;
+    flex-basis:34px;
+    border-radius:8px;
+  }
+  .main#inicio .recent-play{
+    width:27px;
+    height:27px;
+    flex-basis:27px;
+  }
+  .main#inicio .recent-info strong{
+    font-size:11px;
+    -webkit-line-clamp:2;
+  }
+}
+@media(max-width:370px){
+  .main#inicio .recent-station{padding:6px;gap:5px}
+  .main#inicio .recent-cover{width:30px;height:30px;flex-basis:30px}
+  .main#inicio .recent-play{width:24px;height:24px;flex-basis:24px}
+  .main#inicio .recent-info strong{font-size:10px}
+}
