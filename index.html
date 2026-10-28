@@ -123,10 +123,15 @@ let searchTimer=null,searchRequest=0;
 async function searchRadioDirectory(query){
  const term=String(query||"").trim();if(term.length<2)return;
  const requestId=++searchRequest;
- const url="https://de1.api.radio-browser.info/json/stations/search?name="+encodeURIComponent(term)+"&hidebroken=false&is_https=true&order=clickcount&reverse=true&limit="+(dataSaver?"30":"60");
+ const limit=dataSaver?"20":"40";
+ const urls=["name","state","tag"].map(field=>"https://de1.api.radio-browser.info/json/stations/search?"+field+"="+encodeURIComponent(term)+"&hidebroken=true&is_https=true&order=clickcount&reverse=true&limit="+limit);
  try{
-  const response=await fetch(url,{headers:{"Accept":"application/json"}});if(!response.ok)throw new Error("Busca indisponível");
-  const rows=await response.json();if(requestId!==searchRequest||$("search").value.trim()!==term)return;
+  const responses=await Promise.all(urls.map(url=>fetch(url,{headers:{"Accept":"application/json"}}).catch(()=>null)));
+  const successful=responses.filter(response=>response&&response.ok);
+  if(!successful.length)throw new Error("Busca indisponível");
+  const groups=await Promise.all(successful.map(response=>response.json().catch(()=>[])));
+  const rows=[...new Map(groups.flat().map(st=>[st.stationuuid||String(st.name||"").toLocaleLowerCase("pt-BR"),st])).values()];
+  if(requestId!==searchRequest||$("search").value.trim()!==term)return;
   let added=0;
   for(const st of rows){
    const name=String(st.name||"").trim(),stream=st.url_resolved||st.url;let streamUrl="";
