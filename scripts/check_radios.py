@@ -11,9 +11,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 STATUS_PATH = ROOT / "data" / "radio-status.json"
 API_URLS = [
-    "https://de1.api.radio-browser.info/json/stations/search?countrycode=BR&hidebroken=true&is_https=true&order=clickcount&reverse=true&limit=100",
-    "https://fr1.api.radio-browser.info/json/stations/search?countrycode=BR&hidebroken=true&is_https=true&order=clickcount&reverse=true&limit=100",
-    "https://nl1.api.radio-browser.info/json/stations/search?countrycode=BR&hidebroken=true&is_https=true&order=votes&reverse=true&limit=100",
+    "https://de1.api.radio-browser.info/json/stations/search?countrycode=BR&hidebroken=false&is_https=true&order=clickcount&reverse=true&limit=100",
+    "https://fr1.api.radio-browser.info/json/stations/search?countrycode=BR&hidebroken=false&is_https=true&order=clickcount&reverse=true&limit=100",
+    "https://nl1.api.radio-browser.info/json/stations/search?countrycode=BR&hidebroken=false&is_https=true&order=votes&reverse=true&limit=100",
 ]
 USER_AGENT = "ConexaoFM-RadioHealth/1.0 (GitHub Actions)"
 TIMEOUT = 8
@@ -84,7 +84,7 @@ def main():
         url = str(station.get("url_resolved") or station.get("url") or "").strip()
         if not name or not uuid or not url.startswith("https://") or uuid in seen:
             continue
-        if int(station.get("lastcheckok") or 0) != 1 or int(station.get("hls") or 0) == 1:
+        if int(station.get("hls") or 0) == 1:
             continue
         codec = str(station.get("codec") or "").upper()
         if codec and codec not in {"MP3", "AAC", "AAC+", "AACPLUS", "MPEG"}:
