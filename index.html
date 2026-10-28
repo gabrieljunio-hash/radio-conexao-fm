@@ -9,7 +9,7 @@
 <meta name="description" content="Ouça rádios online, descubra estações por estilo e região e salve suas favoritas na Conexão FM.">
 <meta property="og:type" content="website"><meta property="og:site_name" content="Conexão FM"><meta property="og:title" content="Conexão FM — A música que conecta você"><meta property="og:description" content="Descubra rádios online, explore estilos musicais e encontre sua próxima estação favorita."><meta property="og:url" content="https://gabrieljunio-hash.github.io/radio-conexao-fm/"><meta name="twitter:card" content="summary">
 <title>Conexão FM — A música que conecta você</title>
-<link rel="stylesheet" href="assets/css/site.css?v=20261028-ux8">
+<link rel="stylesheet" href="assets/css/site.css?v=20261028-ux9">
 
 </head>
 <body>
@@ -109,7 +109,7 @@ async function loadLiveStations(){
  if(!section||!target)return;
  let ids=[];try{ids=JSON.parse(localStorage.getItem("conexao-fm-recent")||"[]")}catch{}
  const recent=ids.map(id=>RADIO_STATIONS.find(st=>st.id===id)).filter(Boolean).slice(0,5);
- section.hidden=recent.length===0;
+ section.hidden=recent.length===0||view!=="inicio"||!!$("search").value.trim()||!!genre;
  target.innerHTML=recent.map(st=>'<article class="recent-station"><div class="recent-cover '+esc(st.cover)+'">'+imageMarkup(st.favicon,st.name+" — logotipo","recent-logo")+'<span>'+esc(st.initials)+'</span></div><div class="recent-info"><strong>'+esc(st.name)+'</strong><small>'+esc(st.city)+" · "+esc(st.genre)+'</small></div><button class="recent-play" data-recent-play="'+esc(st.id)+'" aria-label="Ouvir novamente '+esc(st.name)+'">▶</button></article>').join("");
 }
 function rememberRecent(st){
@@ -128,7 +128,7 @@ function renderFeatured(){
   return ah-bh||(Number(b.favoriteCount)||0)-(Number(a.favoriteCount)||0);
  });
  const st=candidates[0];
- section.hidden=!st;
+ section.hidden=!st||view!=="inicio"||!!$("search").value.trim()||!!genre;
  if(!st){target.innerHTML="";return}
  const playing=current?.id===st.id&&!audio.paused;
  const health=stationHealth[st.id];
