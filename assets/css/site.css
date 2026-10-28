@@ -326,3 +326,27 @@ dialog button.close{color:#e76652}
  }
  .mobile-nav a:focus-visible{outline:3px solid #ff765e;outline-offset:2px}
 }
+
+
+/* Keep the main action visible and the first screen useful on phones */
+@media(max-width:740px){
+ .hero{
+   min-height:320px;
+   padding:23px 19px;
+ }
+ .hero-copy{max-width:74%;z-index:2}
+ .hero h1{font-size:34px;letter-spacing:-1.7px}
+ .hero p{max-width:235px;line-height:1.65}
+ .art{
+   z-index:0;
+   opacity:.72;
+   right:-4%;
+   top:53%;
+   width:48%;
+   height:44%;
+   pointer-events:none;
+ }
+ .vinyl{width:118px}
+ .orbit{width:150px}
+ .orbit.two{width:185px}
+}
