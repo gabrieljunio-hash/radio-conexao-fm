@@ -669,7 +669,7 @@ dialog button.close{color:#e76652}
 
 
 /* Homepage refinement 2026-10-28: use dedicated pages for search and favorites */
-.main#inicio .top .search,
+.main#inicio .top.is-home .search,
 .main#inicio .top a.help[href="favoritos.html"]{
   display:none!important;
 }
@@ -853,3 +853,17 @@ body{background:var(--bg);color:var(--text)}
     order:1;
   }
 }
+
+
+/* Mobile headers: keep the Explore search on its own row without overlap */
+@media(max-width:740px){
+  .main .top:not(.home-top){height:auto;min-height:58px;flex-wrap:wrap;align-content:center;padding-top:9px;padding-bottom:10px;gap:8px}
+  .main .top:not(.home-top) .mobile-brand{flex:0 0 auto;min-width:0}
+  .main .top:not(.home-top) .search{order:3;flex:1 1 100%;width:100%;max-width:none;min-width:0;height:44px;margin:0}
+  .main .top:not(.home-top) .help{display:none}
+  .main .top.home-top:not(.is-home){height:auto;min-height:0;flex-wrap:wrap;align-content:center;padding-top:9px;padding-bottom:10px;gap:8px}
+  .main .top.home-top:not(.is-home) .explore-search{order:2;flex:1 1 100%;width:100%;max-width:none;min-width:0;height:44px;margin:0}
+  .main .top.home-top:not(.is-home) .mobile-brand{order:1}
+}
+
+.favorite-actions{display:flex;align-items:center;gap:8px}.favorite-actions .play{display:grid;place-items:center}.favorite-actions .remove-favorite{min-width:38px;height:38px;border:1px solid var(--line);border-radius:10px;color:var(--muted);background:transparent;cursor:pointer}.favorite-actions .remove-favorite:hover{color:#ff765e;border-color:#ff765e}
