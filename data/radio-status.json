@@ -4,5 +4,5 @@
   "checkIntervalMinutes": 30,
   "source": "Radio Browser",
   "stations": [],
-  "note": "Gerado automaticamente por GitHub Actions. Estações são ordenadas pela saúde do stream."
+  "note": "Gerado automaticamente. favoriteCount é o ranking provisório mantido neste JSON; favoritos locais ainda não são somados globalmente."
 }
