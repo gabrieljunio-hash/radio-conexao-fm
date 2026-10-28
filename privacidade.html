@@ -8,7 +8,7 @@
 <meta name="robots" content="index,follow">
 <link rel="canonical" href="https://gabrieljunio-hash.github.io/radio-conexao-fm/privacidade.html">
 <link rel="icon" type="image/svg+xml" href="assets/radio.svg">
-<link rel="stylesheet" href="assets/css/site.css?v=20261028-ux19">
+<link rel="stylesheet" href="assets/css/site.css?v=20261028-ux20">
 <title>Política de privacidade | Conexão FM</title>
 </head>
 <body>
@@ -18,7 +18,7 @@
 <div class="side-bottom">Transparência sobre o funcionamento do site e os dados usados no navegador.</div>
 </aside>
 <main class="main">
-<header class="top"><a class="mobile-brand" href="index.html"><span>◖))</span> conexão<span>fm</span></a></header>
+<header class="top"><a class="mobile-brand" href="index.html"><span>◖))</span> conexão<span>fm</span></a><button class="share-button" type="button" data-share-site aria-label="Compartilhar Conexão FM" title="Compartilhar"><span class="share-icon" aria-hidden="true">↗</span><span class="share-label">Compartilhar</span></button></header>
 <nav class="mobile-nav" aria-label="Navegação principal">
 <a class="" href="index.html"><span aria-hidden="true">⌂</span> Início</a>
 <a class="" href="radios.html"><span aria-hidden="true">⌕</span> Explorar</a>
@@ -47,5 +47,25 @@
 </section>
 <footer class="footer"><span>Conexão FM — A música que conecta você.</span><span><a href="radios.html">Explorar rádios</a> · <a href="favoritos.html">Favoritos</a> · <a href="sobre.html">Sobre</a> · <a href="indicar.html">Indicar rádio</a></span></footer>
 </main>
+<script>
+(function(){
+ const button=document.querySelector('[data-share-site]');
+ if(!button)return;
+ const original=button.innerHTML;
+ button.addEventListener('click',async()=>{
+  const payload={title:document.title||'Conexão FM',text:'Ouça suas rádios favoritas na Conexão FM — A música que conecta você.',url:location.href};
+  if(navigator.share){
+   try{await navigator.share(payload);return}catch(error){if(error&&error.name==='AbortError')return}
+  }
+  try{
+   if(navigator.clipboard&&navigator.clipboard.writeText)await navigator.clipboard.writeText(payload.url);
+   else{const field=document.createElement('textarea');field.value=payload.url;field.setAttribute('readonly','');field.style.position='fixed';field.style.opacity='0';document.body.appendChild(field);field.select();const ok=document.execCommand('copy');field.remove();if(!ok)throw new Error('copy failed')}
+   button.innerHTML='<span class="share-icon" aria-hidden="true">✓</span><span class="share-label">Link copiado!</span>';
+   button.classList.add('copied');
+   window.setTimeout(()=>{button.innerHTML=original;button.classList.remove('copied')},2200);
+  }catch(error){window.prompt('Copie o link da Conexão FM:',payload.url)}
+ });
+})();
+</script>
 </body>
 </html>
