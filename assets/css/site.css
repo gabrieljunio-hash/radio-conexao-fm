@@ -1022,3 +1022,9 @@ a{text-underline-offset:3px}
  button,a,input,select,textarea{forced-color-adjust:auto}
  :where(a,button,input,select,textarea,[tabindex]):focus-visible{outline:3px solid Highlight!important}
 }
+
+/* Contraste reforçado para navegação escura */
+.sidebar .nav a,.sidebar .nav button,.sidebar .cat{color:#d0cede}
+.sidebar .nav a:hover,.sidebar .nav button:hover,.sidebar .cat:hover,
+.sidebar .nav a:focus-visible,.sidebar .nav button:focus-visible,.sidebar .cat:focus-visible{color:#ffffff;background:#37304f}
+.sidebar .nav a.active,.sidebar .nav button.active{color:#ffffff;background:#37304f}
