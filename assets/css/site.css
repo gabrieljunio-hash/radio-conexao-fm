@@ -566,3 +566,44 @@ dialog button.close{color:#e76652}
  .featured-state{font-size:9px}
  .featured-play{width:42px;height:42px;flex-basis:42px}
 }
+
+
+/* Home redesign 2026-10-28: compact app-like welcome and recent listening first */
+.home-welcome{
+  display:flex;align-items:center;justify-content:space-between;gap:16px;
+  margin:14px 0 4px;padding:0;background:transparent;border:0;box-shadow:none;
+}
+.home-welcome h1{margin:0;color:#17213a;font:800 clamp(22px,2.5vw,29px)/1.2 Manrope;letter-spacing:-.9px}
+.home-welcome p{margin:6px 0 0;color:#737d90;font-size:12px;line-height:1.5}
+.welcome-explore{display:inline-flex;align-items:center;gap:8px;flex:0 0 auto;padding:10px 12px;border:1px solid #e5e8ef;border-radius:11px;background:#fff;color:#c84e3d;font-size:11px;font-weight:800}
+.welcome-explore:hover{background:#fff3ef;border-color:#ffc7bb}
+.home-welcome[hidden]{display:none!important}
+.recent-section{margin-top:17px}
+.recent-section .heading{margin-bottom:12px}
+.recent-stations{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:10px}
+.recent-station{min-width:0;transition:transform .16s,border-color .16s,box-shadow .16s}
+.recent-section[hidden]{display:none!important}
+.featured-section{margin-top:17px}
+@media(max-width:740px){
+  .home-welcome{margin:15px 2px 3px;gap:8px;align-items:center}
+  .home-welcome h1{font-size:22px;letter-spacing:-.7px}
+  .home-welcome p{max-width:245px;margin-top:5px;font-size:11px}
+  .welcome-explore{padding:9px 10px;font-size:10px;gap:5px;border-radius:10px;white-space:nowrap}
+  .recent-section{margin-top:18px}
+  .recent-section .heading{margin-bottom:10px}
+  .recent-stations{
+    display:flex;gap:10px;overflow-x:auto;overflow-y:hidden;
+    margin:0 -14px;padding:0 14px 7px;scroll-snap-type:x mandatory;
+    overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;
+    scrollbar-width:thin;
+  }
+  .recent-station{flex:0 0 min(78vw,285px);scroll-snap-align:start;padding:10px;background:#fff;border-color:#e5e8ef}
+  .recent-cover{flex-basis:48px;width:48px;height:48px}
+  .recent-play{flex-basis:38px;width:38px;height:38px}
+  .featured-section{margin-top:18px}
+}
+@media(max-width:370px){
+  .home-welcome h1{font-size:20px}
+  .home-welcome p{font-size:10px}
+  .welcome-explore{padding:8px;font-size:9px}
+}
