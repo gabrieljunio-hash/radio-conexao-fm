@@ -205,6 +205,20 @@ $("fullNext").addEventListener("click",()=>stepStation(1));
 $("fullStop").addEventListener("click",()=>{audio.pause();audio.removeAttribute("src");audio.load();clearTimeout(playCheckTimer);player()});
 $("fullMute").addEventListener("click",()=>{audio.muted=!audio.muted;$("mute").textContent=audio.muted?"◖×":"◖))";$("mute").style.color=audio.muted?"#b7a2ff":"";player()});
 $("fullVolume").addEventListener("input",e=>{audio.volume=Number(e.target.value);audio.muted=false;$("volume").value=e.target.value;$("volumeText").textContent=Math.round(audio.volume*100)+"%";player()});
+function setAppView(next,updateUrl=true){
+ view=next;genre="";showAllStations=false;
+ if(next==="inicio")$("search").value="";
+ document.querySelectorAll(".mobile-nav a").forEach(a=>{const href=a.getAttribute("href");const active=next==="inicio"?href==="index.html":next==="explorar"?href==="radios.html":href==="favoritos.html";a.classList.toggle("active",active);if(active)a.setAttribute("aria-current","page");else a.removeAttribute("aria-current")});
+ document.querySelectorAll(".sidebar .nav a").forEach(a=>{const href=a.getAttribute("href");a.classList.toggle("active",next==="inicio"?href==="index.html":next==="explorar"?href==="radios.html":href==="favoritos.html")});
+ if(updateUrl){const path=next==="inicio"?"index.html":next==="explorar"?"radios.html":"favoritos.html";history.pushState({conexaoView:next},"",path)}
+ render();if(next!=="inicio")$("stationSection").scrollIntoView({behavior:"smooth",block:"start"});
+}
+document.addEventListener("click",e=>{
+ const nav=e.target.closest('a[href="index.html"],a[href="radios.html"],a[href="favoritos.html"]');
+ if(nav&&!e.ctrlKey&&!e.metaKey&&!e.shiftKey&&e.button===0){e.preventDefault();const href=nav.getAttribute("href");setAppView(href==="index.html"?"inicio":href==="radios.html"?"explorar":"favoritos");return}
+ const button=e.target.closest(".top-genres [data-genre]");if(button){e.preventDefault();genre=button.dataset.genre;$("search").value="";view="inicio";render();$("stationSection").scrollIntoView({behavior:"smooth",block:"start"});}
+});
+window.addEventListener("popstate",()=>{const path=location.pathname.split("/").pop();setAppView(path==="favoritos.html"?"favoritos":path==="radios.html"?"explorar":"inicio",false)});
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!fullPlayer.hidden)closeFullPlayer()});
 const d=$("dialog"),open=()=>d.showModal();$("about").addEventListener("click",open);$("aboutFooter").addEventListener("click",open);$("close").addEventListener("click",()=>d.close());$("understood").addEventListener("click",()=>d.close());document.addEventListener("keydown",e=>{if(e.key==="/"&&!["INPUT","TEXTAREA"].includes(document.activeElement.tagName)){e.preventDefault();$("search").focus()}if(e.key==="Escape"&&d.open)d.close()});const params=new URLSearchParams(location.search);if(params.has("q")){const q=params.get("q");genre=["Sertanejo","Flashback","Pop","Notícias","Gospel","Rock"].find(g=>g.toLocaleLowerCase("pt-BR")===q.toLocaleLowerCase("pt-BR"))||"";if(!genre){$("search").value=q;view="explorar";$("homeHero").hidden=true;}}render();player();loadLiveStations();if($("search").value.trim().length>=2)searchRadioDirectory($("search").value.trim());
 })();
