@@ -208,6 +208,7 @@ $("fullVolume").addEventListener("input",e=>{audio.volume=Number(e.target.value)
 function setAppView(next,updateUrl=true){
  view=next;genre="";showAllStations=false;
  const topHeader=document.querySelector(".home-top");if(topHeader)topHeader.classList.toggle("is-home",next==="inicio");
+ $("homeHero").hidden=next!=="inicio";$("featuredSection").hidden=next!=="inicio";$("genreRailsSection").hidden=next!=="inicio";
  if(next==="inicio")$("search").value="";
  document.querySelectorAll(".mobile-nav a").forEach(a=>{const href=a.getAttribute("href");const active=next==="inicio"?href==="index.html":next==="explorar"?href==="radios.html":href==="favoritos.html";a.classList.toggle("active",active);if(active)a.setAttribute("aria-current","page");else a.removeAttribute("aria-current")});
  document.querySelectorAll(".sidebar .nav a").forEach(a=>{const href=a.getAttribute("href");a.classList.toggle("active",next==="inicio"?href==="index.html":next==="explorar"?href==="radios.html":href==="favoritos.html")});
