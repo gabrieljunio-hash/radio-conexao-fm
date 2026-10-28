@@ -1,0 +1,19 @@
+{
+  "name": "Rádio Conexão FM",
+  "short_name": "Conexão FM",
+  "description": "A música que conecta você.",
+  "lang": "pt-BR",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#10101b",
+  "theme_color": "#10101b",
+  "icons": [
+    {
+      "src": "assets/radio.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
