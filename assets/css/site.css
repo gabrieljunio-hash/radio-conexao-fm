@@ -787,3 +787,9 @@ body{background:var(--bg);color:var(--text)}
  .recent-station{min-width:0}.recent-info small{display:block;font-size:9px;line-height:1.2}.main#inicio .recent-stations{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 @media(max-width:380px){.home-top .mobile-brand{font-size:13px}.top-genres button{padding:6px 7px;font-size:9px}.rail-station{flex-basis:100px}}
+
+/* Shared desktop header identity */
+.main .top .mobile-brand{display:flex;align-items:center;gap:7px;font:800 15px Manrope;color:#17213A;white-space:nowrap}
+.main .top .mobile-brand>span:first-child{color:#FF765E;font-size:19px}
+.main .top .mobile-brand>span:last-child{color:#FF765E}
+@media(max-width:740px){.main .top .mobile-brand{font-size:14px}.home-top .top-genres{min-width:0}}
