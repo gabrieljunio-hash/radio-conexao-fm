@@ -918,7 +918,7 @@ body{background:var(--bg);color:var(--text)}
 /* Acessibilidade de leitura e toque — ux21 */
 body{font-size:16px;line-height:1.55}
 p,li,.note,.footer,.side-bottom,.about-copy,.legal-content{line-height:1.65}
-.muted,.note,.genre small,.station-info small,.info small,.tags span,.eyebrow,.side-label,.status,.footer,.side-bottom small{color:#c3c4d4}
+.muted,.note,.station-info small,.info small,.tags span,.eyebrow,.status,.footer{color:#59657c}.genre small{color:#f0edf7}.sidebar .side-label,.sidebar .side-bottom small{color:#c3c4d4}
 .eyebrow,.side-label{font-size:12px;letter-spacing:.06em}
 .genre strong{font-size:15px;line-height:1.35}
 .genre small{font-size:12px;line-height:1.45}
