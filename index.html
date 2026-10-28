@@ -9,7 +9,7 @@
 <meta name="description" content="Ouça rádios online, descubra estações por estilo e região e salve suas favoritas na Conexão FM.">
 <meta property="og:type" content="website"><meta property="og:site_name" content="Conexão FM"><meta property="og:title" content="Conexão FM — A música que conecta você"><meta property="og:description" content="Descubra rádios online, explore estilos musicais e encontre sua próxima estação favorita."><meta property="og:url" content="https://gabrieljunio-hash.github.io/radio-conexao-fm/"><meta name="twitter:card" content="summary">
 <title>Conexão FM — A música que conecta você</title>
-<link rel="stylesheet" href="assets/css/site.css?v=20261028-ux18">
+<link rel="stylesheet" href="assets/css/site.css?v=20261028-ux19">
 
 </head>
 <body>
@@ -208,7 +208,7 @@ $("toggle").addEventListener("click",()=>{if(!current){toast("Escolha uma rádio
 const fullPlayer=$("fullscreenPlayer");let fullPlayerHistoryEntry=false;
 function openFullPlayer(){if(!fullPlayer||!fullPlayer.hidden)return;fullPlayer.hidden=false;document.body.classList.add("player-expanded");try{history.pushState({conexaoFmPlayer:true},"","#player");fullPlayerHistoryEntry=true}catch{}player();$("fullClose").focus()}
 function closeFullPlayer(fromPopState=false){if(!fullPlayer||fullPlayer.hidden)return;fullPlayer.hidden=true;document.body.classList.remove("player-expanded");if(fullPlayerHistoryEntry&&!fromPopState){fullPlayerHistoryEntry=false;try{history.back()}catch{}}else fullPlayerHistoryEntry=false}
-window.addEventListener("popstate",()=>{if(!fullPlayer.hidden)closeFullPlayer(true);else fullPlayerHistoryEntry=false});
+window.addEventListener("popstate",e=>{if(!fullPlayer.hidden)closeFullPlayer(true);else fullPlayerHistoryEntry=false;const state=e.state&&e.state.conexaoView;if(state&&["inicio","explorar","favoritos"].includes(state)){setAppView(state,false);return}const path=location.pathname.split("/").pop();if(path==="radios.html")setAppView("explorar",false);else if(path==="favoritos.html")setAppView("favoritos",false);else setAppView("inicio",false)});
 $("player").addEventListener("click",e=>{if(e.target.closest("button,input,audio,label"))return;openFullPlayer()});
 $("playerCover").style.cursor="pointer";$("playerName").style.cursor="pointer";$("playerMeta").style.cursor="pointer";
 $("fullClose").addEventListener("click",closeFullPlayer);
@@ -221,6 +221,7 @@ $("fullMute").addEventListener("click",()=>{audio.muted=!audio.muted;$("mute").t
 $("fullVolume").addEventListener("input",e=>{audio.volume=Number(e.target.value);audio.muted=false;$("volume").value=e.target.value;$("volumeText").textContent=Math.round(audio.volume*100)+"%";player()});
 function setAppView(next,updateUrl=true){
  view=next;genre="";showAllStations=false;
+ if(next!=="explorar")$("search").value="";
  const topHeader=document.querySelector(".home-top");if(topHeader)topHeader.classList.toggle("is-home",next==="inicio");
  $("homeHero").hidden=next!=="inicio";$("featuredSection").hidden=next!=="inicio";$("genreRailsSection").hidden=next!=="inicio";
  if(next==="inicio")$("search").value="";
@@ -230,10 +231,17 @@ function setAppView(next,updateUrl=true){
  render();window.scrollTo(0,0);
 }
 document.addEventListener("click",e=>{
+ const link=e.target.closest("a[href]");
+ if(link&&!e.defaultPrevented&&!e.metaKey&&!e.ctrlKey&&!e.shiftKey&&e.button===0){
+  const href=link.getAttribute("href");
+  if(["index.html","index.html#stationSection","radios.html","radios.html#stationSection","favoritos.html","favoritos.html#stationSection"].includes(href)){
+   e.preventDefault();const next=href.startsWith("radios.html")?"explorar":href.startsWith("favoritos.html")?"favoritos":"inicio";setAppView(next,true);return;
+  }
+ }
  const button=e.target.closest(".top-genres [data-genre]");if(button){e.preventDefault();genre=button.dataset.genre;$("search").value="";view="inicio";const topHeader=document.querySelector(".home-top");if(topHeader)topHeader.classList.add("is-home");render();window.scrollTo({top:0,left:0,behavior:"instant"});$("stationSection").scrollIntoView({behavior:"smooth",block:"start"});}
 });
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!fullPlayer.hidden)closeFullPlayer()});
-const d=$("dialog"),open=()=>d.showModal();$("about").addEventListener("click",open);$("aboutFooter").addEventListener("click",open);$("close").addEventListener("click",()=>d.close());$("understood").addEventListener("click",()=>d.close());document.addEventListener("keydown",e=>{if(e.key==="/"&&!["INPUT","TEXTAREA"].includes(document.activeElement.tagName)){e.preventDefault();$("search").focus()}if(e.key==="Escape"&&d.open)d.close()});const params=new URLSearchParams(location.search);if(params.has("q")){const q=params.get("q");genre=["Sertanejo","Flashback","Pop","Notícias","Gospel","Rock"].find(g=>g.toLocaleLowerCase("pt-BR")===q.toLocaleLowerCase("pt-BR"))||"";if(!genre){$("search").value=q;view="explorar";$("homeHero").hidden=true;}}const topHeader=document.querySelector(".home-top");if(topHeader)topHeader.classList.toggle("is-home",view==="inicio");render();player();loadLiveStations().then(()=>{const params=new URLSearchParams(location.search);const requestedId=params.get("station");let lastId="";try{lastId=localStorage.getItem("conexao-fm-last-station")||""}catch{}const selected=RADIO_STATIONS.find(st=>st.id===requestedId&&st.streamUrl);const last=selected||RADIO_STATIONS.find(st=>st.id===lastId&&st.streamUrl);if(last){current=last;audio.src=last.streamUrl;$("playerName").textContent=last.name;$("playerMeta").textContent=last.city+" · "+last.genre;player();if(selected){$("player").scrollIntoView({behavior:"smooth",block:"center"});toast("Rádio selecionada. Toque em reproduzir para ouvir.")}}});if($("search").value.trim().length>=2)searchRadioDirectory($("search").value.trim());
+const d=$("dialog"),open=()=>d.showModal();$("about").addEventListener("click",open);$("aboutFooter").addEventListener("click",open);$("close").addEventListener("click",()=>d.close());$("understood").addEventListener("click",()=>d.close());document.addEventListener("keydown",e=>{if(e.key==="/"&&!["INPUT","TEXTAREA"].includes(document.activeElement.tagName)){e.preventDefault();$("search").focus()}if(e.key==="Escape"&&d.open)d.close()});const params=new URLSearchParams(location.search);const requestedView=params.get("view");if(["inicio","explorar","favoritos"].includes(requestedView))view=requestedView;else if(location.pathname.endsWith("/radios.html"))view="explorar";else if(location.pathname.endsWith("/favoritos.html"))view="favoritos";if(params.has("q")){const q=params.get("q");genre=["Sertanejo","Flashback","Pop","Notícias","Gospel","Rock"].find(g=>g.toLocaleLowerCase("pt-BR")===q.toLocaleLowerCase("pt-BR"))||"";if(!genre){$("search").value=q;view="explorar";$("homeHero").hidden=true;}}const topHeader=document.querySelector(".home-top");if(topHeader)topHeader.classList.toggle("is-home",view==="inicio");$("homeHero").hidden=view!=="inicio";$("featuredSection").hidden=view!=="inicio";$("genreRailsSection").hidden=view!=="inicio";render();player();loadLiveStations().then(()=>{const params=new URLSearchParams(location.search);const requestedId=params.get("station");let lastId="";try{lastId=localStorage.getItem("conexao-fm-last-station")||""}catch{}const selected=RADIO_STATIONS.find(st=>st.id===requestedId&&st.streamUrl);const last=selected||RADIO_STATIONS.find(st=>st.id===lastId&&st.streamUrl);if(last){if(selected&&params.get("autoplay")==="1"){play(selected.id)}else{current=last;audio.src=last.streamUrl;$("playerName").textContent=last.name;$("playerMeta").textContent=last.city+" · "+last.genre;player();if(selected){$("player").scrollIntoView({behavior:"smooth",block:"center"});toast("Rádio selecionada. Toque em reproduzir para ouvir.")}}}});if($("search").value.trim().length>=2)searchRadioDirectory($("search").value.trim());
 })();
 </script>
 </body></html>
