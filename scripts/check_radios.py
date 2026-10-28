@@ -124,7 +124,9 @@ def main():
             "genre": genre,
             "tagline": ", ".join(filter(None, tags.split(",")[:2])) or "Rádio online",
             "streamUrl": url,
+            "favicon": str(station.get("favicon") or station.get("logo") or ""),
             "initials": initials,
+            "favoriteCount": int(old.get("favoriteCount") or 0),
             "codec": codec,
             "bitrate": int(station.get("bitrate") or 0),
             "ok": ok,
@@ -140,7 +142,9 @@ def main():
         # Be polite to radio hosts and keep the workflow run bounded.
         time.sleep(0.15)
 
-    result.sort(key=lambda s: (0 if s["ok"] else 1, -s["successes"] if s["ok"] else s["failures"], -s["clickcount"], s["name"].casefold()))
+    result.sort(key=lambda s: (-s["favoriteCount"], 0 if s["ok"] else 1, -s["successes"] if s["ok"] else s["failures"], -s["clickcount"], s["name"].casefold()))
+    for rank, station in enumerate(result, start=1):
+        station["rank"] = rank
     payload = {
         "schemaVersion": 1,
         "updatedAt": now,
@@ -151,7 +155,7 @@ def main():
         "working": sum(1 for s in result if s["ok"]),
         "failed": sum(1 for s in result if not s["ok"]),
         "stations": result,
-        "note": "Automatically generated. A reachable stream can still fail in some browsers; status is a periodic snapshot.",
+        "note": "Automatically generated. favoriteCount is a provisional manually maintained ranking in this JSON; browser-local favorites are not globally aggregated yet. A reachable stream can still fail in some browsers; status is a periodic snapshot.",
     }
     STATUS_PATH.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print("Updated", STATUS_PATH, "total=", len(result), "working=", payload["working"], "failed=", payload["failed"])
