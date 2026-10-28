@@ -57,3 +57,10 @@ body.player-expanded{overflow:hidden}
 }
 
 .search-submit{border:0;background:transparent;padding:0;display:grid;place-items:center;color:#b7a2ff;font-size:25px;line-height:1;flex:0 0 auto;cursor:pointer}.search-submit:focus-visible{outline:2px solid #b7a2ff;outline-offset:3px;border-radius:5px}.search-submit:hover{color:#e0d5ff}
+
+
+/* Controles compactos e modo de economia de dados móveis */
+.station-actions{display:flex;align-items:center;justify-content:flex-end;gap:12px;flex-wrap:wrap}
+.data-saver-toggle{font-size:12px}
+@media(max-width:560px){.station-actions{gap:6px}.data-saver-toggle{font-size:11px}}
+body.data-saver .station-logo,body.data-saver .player-station-logo{display:none!important}
