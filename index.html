@@ -20,7 +20,7 @@
 <div class="side-bottom"><span class="dot"></span><strong style="color:#eee">Rádio ligada, companhia garantida.</strong><br>Encontre sua próxima estação favorita.</div>
 </aside>
 <main class="main" id="inicio">
-<header class="top home-top"><a class="mobile-brand" href="index.html"><span>◖))</span> conexão<span>fm</span></a><label class="search explore-search" id="exploreSearch" hidden><button type="button" class="search-submit" id="searchSubmit" aria-label="Pesquisar">⌕</button><input id="search" type="search" placeholder="Buscar rádio, cidade ou estilo..." aria-label="Buscar rádios"></label><nav class="top-genres" aria-label="Atalhos de gêneros"><button data-genre="Sertanejo">Sertanejo</button><button data-genre="Flashback">Flashback</button><button data-genre="Pop">Pop &amp; Hits</button><button data-genre="Notícias">Notícias</button><button data-genre="Gospel">Gospel</button><button data-genre="Rock">Rock</button></nav><button class="help" id="about" aria-label="Sobre">?</button></header>
+<header class="top home-top is-home"><a class="mobile-brand" href="index.html" aria-label="Conexão FM — Início"><span class="brand-mark" aria-hidden="true">◖))</span></a><label class="search explore-search" id="exploreSearch" hidden><button type="button" class="search-submit" id="searchSubmit" aria-label="Pesquisar">⌕</button><input id="search" type="search" placeholder="Buscar rádio, cidade ou estilo..." aria-label="Buscar rádios"></label><nav class="top-genres" aria-label="Atalhos de gêneros"><button data-genre="Sertanejo">Sertanejo</button><button data-genre="Flashback">Flashback</button><button data-genre="Pop">Pop &amp; Hits</button></nav><button class="help" id="about" aria-label="Sobre" hidden>?</button></header>
 <nav class="mobile-nav" aria-label="Navegação principal">
 <a class="active" href="index.html"><span aria-hidden="true">⌂</span> Início</a>
 <a class="" href="radios.html"><span aria-hidden="true">⌕</span> Explorar</a>
@@ -108,8 +108,8 @@ async function loadLiveStations(){
  const section=$("recentSection"),target=$("recentStations");
  if(!section||!target)return;
  let ids=[];try{ids=JSON.parse(localStorage.getItem("conexao-fm-recent")||"[]")}catch{}
- const recent=ids.map(id=>RADIO_STATIONS.find(st=>st.id===id)).filter(Boolean).slice(0,9);
- const suggestions=RADIO_STATIONS.filter(st=>st.streamUrl&&!recent.some(r=>r.id===st.id)).slice(0,Math.max(0,9-recent.length));
+ const recent=ids.map(id=>RADIO_STATIONS.find(st=>st.id===id)).filter(Boolean).slice(0,6);
+ const suggestions=RADIO_STATIONS.filter(st=>st.streamUrl&&!recent.some(r=>r.id===st.id)).slice(0,Math.max(0,6-recent.length));
  const cards=[...recent.map(st=>({st,suggested:false})),...suggestions.map(st=>({st,suggested:true}))];
  section.hidden=cards.length===0||view!=="inicio"||!!$("search").value.trim()||!!genre;
  target.innerHTML=cards.map(({st,suggested})=>'<article class="recent-station '+(suggested?'is-suggestion':'')+'"><div class="recent-cover '+esc(st.cover)+'">'+imageMarkup(st.favicon,st.name+" — logotipo","recent-logo")+'<span>'+esc(st.initials)+'</span></div><div class="recent-info"><strong>'+esc(st.name)+'</strong><small>'+esc(suggested?'Sugestão para você':st.city+" · "+st.genre)+'</small></div><button class="recent-play" data-recent-play="'+esc(st.id)+'" aria-label="Ouvir '+esc(st.name)+'">▶</button></article>').join("");
@@ -207,20 +207,21 @@ $("fullMute").addEventListener("click",()=>{audio.muted=!audio.muted;$("mute").t
 $("fullVolume").addEventListener("input",e=>{audio.volume=Number(e.target.value);audio.muted=false;$("volume").value=e.target.value;$("volumeText").textContent=Math.round(audio.volume*100)+"%";player()});
 function setAppView(next,updateUrl=true){
  view=next;genre="";showAllStations=false;
+ const topHeader=document.querySelector(".home-top");if(topHeader)topHeader.classList.toggle("is-home",next==="inicio");
  if(next==="inicio")$("search").value="";
  document.querySelectorAll(".mobile-nav a").forEach(a=>{const href=a.getAttribute("href");const active=next==="inicio"?href==="index.html":next==="explorar"?href==="radios.html":href==="favoritos.html";a.classList.toggle("active",active);if(active)a.setAttribute("aria-current","page");else a.removeAttribute("aria-current")});
  document.querySelectorAll(".sidebar .nav a").forEach(a=>{const href=a.getAttribute("href");a.classList.toggle("active",next==="inicio"?href==="index.html":next==="explorar"?href==="radios.html":href==="favoritos.html")});
  if(updateUrl){const path=next==="inicio"?"index.html":next==="explorar"?"radios.html":"favoritos.html";history.pushState({conexaoView:next},"",path)}
- render();if(next!=="inicio")$("stationSection").scrollIntoView({behavior:"smooth",block:"start"});
+ render();window.scrollTo({top:0,left:0,behavior:"instant"});
 }
 document.addEventListener("click",e=>{
  const nav=e.target.closest('a[href="index.html"],a[href="radios.html"],a[href="favoritos.html"]');
  if(nav&&!e.ctrlKey&&!e.metaKey&&!e.shiftKey&&e.button===0){e.preventDefault();const href=nav.getAttribute("href");setAppView(href==="index.html"?"inicio":href==="radios.html"?"explorar":"favoritos");return}
- const button=e.target.closest(".top-genres [data-genre]");if(button){e.preventDefault();genre=button.dataset.genre;$("search").value="";view="inicio";render();$("stationSection").scrollIntoView({behavior:"smooth",block:"start"});}
+ const button=e.target.closest(".top-genres [data-genre]");if(button){e.preventDefault();genre=button.dataset.genre;$("search").value="";view="inicio";const topHeader=document.querySelector(".home-top");if(topHeader)topHeader.classList.add("is-home");render();window.scrollTo({top:0,left:0,behavior:"instant"});$("stationSection").scrollIntoView({behavior:"smooth",block:"start"});}
 });
 window.addEventListener("popstate",()=>{const path=location.pathname.split("/").pop();setAppView(path==="favoritos.html"?"favoritos":path==="radios.html"?"explorar":"inicio",false)});
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!fullPlayer.hidden)closeFullPlayer()});
-const d=$("dialog"),open=()=>d.showModal();$("about").addEventListener("click",open);$("aboutFooter").addEventListener("click",open);$("close").addEventListener("click",()=>d.close());$("understood").addEventListener("click",()=>d.close());document.addEventListener("keydown",e=>{if(e.key==="/"&&!["INPUT","TEXTAREA"].includes(document.activeElement.tagName)){e.preventDefault();$("search").focus()}if(e.key==="Escape"&&d.open)d.close()});const params=new URLSearchParams(location.search);if(params.has("q")){const q=params.get("q");genre=["Sertanejo","Flashback","Pop","Notícias","Gospel","Rock"].find(g=>g.toLocaleLowerCase("pt-BR")===q.toLocaleLowerCase("pt-BR"))||"";if(!genre){$("search").value=q;view="explorar";$("homeHero").hidden=true;}}render();player();loadLiveStations();if($("search").value.trim().length>=2)searchRadioDirectory($("search").value.trim());
+const d=$("dialog"),open=()=>d.showModal();$("about").addEventListener("click",open);$("aboutFooter").addEventListener("click",open);$("close").addEventListener("click",()=>d.close());$("understood").addEventListener("click",()=>d.close());document.addEventListener("keydown",e=>{if(e.key==="/"&&!["INPUT","TEXTAREA"].includes(document.activeElement.tagName)){e.preventDefault();$("search").focus()}if(e.key==="Escape"&&d.open)d.close()});const params=new URLSearchParams(location.search);if(params.has("q")){const q=params.get("q");genre=["Sertanejo","Flashback","Pop","Notícias","Gospel","Rock"].find(g=>g.toLocaleLowerCase("pt-BR")===q.toLocaleLowerCase("pt-BR"))||"";if(!genre){$("search").value=q;view="explorar";$("homeHero").hidden=true;}}const topHeader=document.querySelector(".home-top");if(topHeader)topHeader.classList.toggle("is-home",view==="inicio");render();player();loadLiveStations();if($("search").value.trim().length>=2)searchRadioDirectory($("search").value.trim());
 })();
 </script>
 </body></html>
