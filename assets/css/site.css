@@ -31,3 +31,11 @@ body.player-expanded{overflow:hidden}
 .cover.has-image:before{display:none}
 .cover.has-image strong,.cover.has-image small{display:none}
 @media(max-width:740px){.cover{aspect-ratio:1/1}}
+
+/* Busca sempre acessível durante a rolagem */
+.top{position:sticky;top:0;z-index:10;background:#10101bf2;backdrop-filter:blur(14px);border-bottom:1px solid #ffffff0a;transition:box-shadow .18s ease}
+.search{transition:border-color .18s ease,box-shadow .18s ease,background .18s ease}
+.search:hover{border-color:#8d78d8;background:#211f32}
+.search:focus-within{border-color:#b7a2ff;box-shadow:0 0 0 3px #a78bfa30;background:#211f32}
+.search input:focus{outline:none}
+@media(max-width:740px){.top{margin:0 -14px;padding:0 14px}}
