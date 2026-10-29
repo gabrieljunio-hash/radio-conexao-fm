@@ -236,7 +236,7 @@ document.addEventListener("click",e=>{
  const link=e.target.closest("a[href]");
  if(link&&!e.defaultPrevented&&!e.metaKey&&!e.ctrlKey&&!e.shiftKey&&e.button===0){
   const href=link.getAttribute("href");
-  if(["index.html","index.html#stationSection","radios.html","radios.html#stationSection","favoritos.html","favoritos.html#stationSection"].includes(href)){
+  if(["index.html","index.html#stationSection","favoritos.html","favoritos.html#stationSection"].includes(href)){
    e.preventDefault();const next=href.startsWith("radios.html")?"explorar":href.startsWith("favoritos.html")?"favoritos":"inicio";setAppView(next,true);return;
   }
  }
