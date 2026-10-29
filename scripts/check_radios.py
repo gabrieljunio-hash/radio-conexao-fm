@@ -11,9 +11,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 STATUS_PATH = ROOT / "data" / "radio-status.json"
 API_URLS = [
-    "https://de1.api.radio-browser.info/json/stations/search?countrycode=BR&hidebroken=false&is_https=true&order=clickcount&reverse=true&limit=100",
-    "https://fr1.api.radio-browser.info/json/stations/search?countrycode=BR&hidebroken=false&is_https=true&order=clickcount&reverse=true&limit=100",
-    "https://nl1.api.radio-browser.info/json/stations/search?countrycode=BR&hidebroken=false&is_https=true&order=votes&reverse=true&limit=100",
+    "https://de1.api.radio-browser.info/json/stations/search?countrycode=BR&hidebroken=false&is_https=true&order=clickcount&reverse=true&limit=200",
+    "https://fr1.api.radio-browser.info/json/stations/search?countrycode=BR&hidebroken=false&is_https=true&order=clickcount&reverse=true&limit=200",
+    "https://nl1.api.radio-browser.info/json/stations/search?countrycode=BR&hidebroken=false&is_https=true&order=votes&reverse=true&limit=200",
 ]
 USER_AGENT = "ConexaoFM-RadioHealth/1.0 (GitHub Actions)"
 TIMEOUT = 8
@@ -104,16 +104,30 @@ def main():
         tags = str(station.get("tags") or "").lower()
         combined = tags + " " + name.lower()
         genre = "Pop"
-        if any(word in combined for word in ("sertanej", "country", "caipira", "forro", "forró", "brega")):
+        if any(word in combined for word in ("sertanej", "country", "caipira", "moda de viola")):
             genre = "Sertanejo"
+        elif any(word in combined for word in ("forro", "forró", "pé de serra")):
+            genre = "Forró"
+        elif any(word in combined for word in ("samba", "pagode")):
+            genre = "Samba & Pagode"
+        elif any(word in combined for word in ("brega", "romantica", "romântica")):
+            genre = "Brega"
         elif any(word in combined for word in ("flashback", "oldies", "80s", "90s", "classic", "nostalgia", "disco")):
             genre = "Flashback"
-        elif any(word in combined for word in ("news", "noticia", "notícia", "jornal", "talk", "information")):
+        elif any(word in combined for word in ("news", "noticia", "notícia", "jornal", "talk", "information", "jornalismo")):
             genre = "Notícias"
-        elif any(word in combined for word in ("gospel", "christian", "evangel")):
+        elif any(word in combined for word in ("gospel", "christian", "evangel", "worship")):
             genre = "Gospel"
-        elif any(word in combined for word in ("rock", "metal", "alternative")):
-            genre = "Pop"
+        elif any(word in combined for word in ("rock", "metal", "alternative", "punk")):
+            genre = "Rock"
+        elif any(word in combined for word in ("mpb", "brazilian music", "música brasileira")):
+            genre = "MPB"
+        elif any(word in combined for word in ("jazz", "blues", "soul")):
+            genre = "Jazz & Blues"
+        elif any(word in combined for word in ("electronic", "eletrônica", "dance", "techno", "house", "trance")):
+            genre = "Eletrônica"
+        elif any(word in combined for word in ("classical", "classica", "clássica", "orchestra", "opera")):
+            genre = "Clássica"
         initials = "".join(word[0] for word in name.split()[:3]).upper()[:5]
         city = ", ".join(filter(None, [station.get("state"), station.get("country")])) or "Brasil"
         result.append({
