@@ -93,7 +93,7 @@ async function loadLiveStations(){
   for(const hs of (healthData.stations||[])){
    const id=String(hs.id||"");
    const favicon=safeImageUrl(hs.favicon||"");
-   if(!id||!hs.ok||!favicon||seenIds.has(id))continue;
+   if(!id||!hs.ok||seenIds.has(id))continue;
    const name=String(hs.name||"").trim();
    const streamUrl=String(hs.streamUrl||"");
    if(!name||!streamUrl.startsWith("https://"))continue;
