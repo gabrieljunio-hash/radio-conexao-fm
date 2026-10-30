@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#17213A">
+<meta name="robots" content="index,follow">
+<meta name="description" content="Ouça esta rádio online na Conexão FM. Conheça a emissora e compartilhe sua página.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Conexão FM">
+<meta property="og:title" content="Rádio online — Conexão FM">
+<meta property="og:description" content="Ouça sua rádio favorita na Conexão FM.">
+<meta property="og:url" content="https://radio-conexao-fm.pages.dev/radio.html">
+<meta name="twitter:card" content="summary">
+<link rel="icon" type="image/svg+xml" href="assets/radio.svg">
+<link rel="stylesheet" href="assets/css/site.css?v=20261028-ux27">
+<title>Rádio online — Conexão FM</title>
+<style>
+*{box-sizing:border-box}.radio-page{min-height:100vh;padding:28px 18px 150px;background:#f5f4ef;color:#17213a}.radio-wrap{width:min(760px,100%);margin:0 auto}.radio-back{display:inline-flex;align-items:center;min-height:46px;padding:8px 14px;border:1px solid #17213a26;border-radius:12px;background:#fff;color:#17213a;text-decoration:none;font-weight:700}.radio-card{margin-top:22px;padding:clamp(20px,5vw,38px);border:1px solid #17213a20;border-radius:22px;background:#fff;box-shadow:0 12px 36px #17213a0c}.radio-brand{font-weight:800;color:#ff765e;letter-spacing:.04em;font-size:13px}.radio-logo{display:grid;place-items:center;width:104px;height:104px;margin:22px 0 18px;border-radius:24px;background:#f1eee9;overflow:hidden;color:#ff765e;font-size:34px;font-weight:800}.radio-logo img{width:100%;height:100%;object-fit:contain;background:#fff}.radio-card h1{margin:0 0 8px;font-size:clamp(25px,6vw,36px);line-height:1.2;overflow-wrap:anywhere}.radio-location{margin:0;color:#59657c}.radio-description{margin:22px 0;color:#344057;line-height:1.7}.radio-tags{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0}.radio-tags span{padding:7px 11px;border-radius:999px;background:#f1eee9;color:#344057;font-size:13px}.radio-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:24px}.radio-actions button,.radio-actions a{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:10px 18px;border:1px solid #17213a26;border-radius:12px;background:#fff;color:#17213a;text-decoration:none;font:700 15px inherit;cursor:pointer}.radio-actions .listen{background:#17213a;color:#fff;border-color:#17213a}.radio-actions button[aria-pressed=true]{color:#b12d52;border-color:#b12d52;background:#fff4f6}.radio-state{margin-top:18px;padding:12px 14px;border-radius:12px;background:#f5f4ef;color:#59657c;font-size:14px}.radio-error{padding:24px 0;text-align:center}.radio-error h1{font-size:25px}.radio-error p{color:#59657c}.radio-footer{margin-top:22px;text-align:center;color:#59657c;font-size:13px}.radio-footer a{color:#344057}.radio-loading{padding:40px 10px;text-align:center;color:#59657c}
+@media(max-width:520px){.radio-page{padding:16px 12px 140px}.radio-card{margin-top:14px;border-radius:17px}.radio-actions>*{flex:1 1 100%}.radio-logo{width:88px;height:88px}}
+</style>
+</head>
+<body>
+<main class="radio-page"><div class="radio-wrap">
+<a class="radio-back" href="index.html">← Voltar para Conexão FM</a>
+<section class="radio-card" id="radioCard" aria-live="polite"><div class="radio-loading">Carregando informações da rádio…</div></section>
+<footer class="radio-footer">Conexão FM — A música que conecta você · <a href="privacidade.html">Privacidade</a></footer>
+</div></main>
+<script>
+(()=>{"use strict";
+const API="https://radio-conexao-api.bieljuniho.workers.dev/api/stations?limit=100";
+const params=new URLSearchParams(location.search);
+const slug=(params.get("station")||"").trim();
+const card=document.getElementById("radioCard");
+const esc=value=>String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const safeUrl=value=>{try{const u=new URL(String(value||""));return u.protocol==="https:"?u.href:""}catch{return ""}};
+function showError(message){card.innerHTML='<div class="radio-error"><h1>Não encontramos essa rádio</h1><p>'+esc(message)+'</p><a class="radio-back" href="radios.html">Explorar outras rádios</a></div>';document.title="Rádio não encontrada — Conexão FM"}
+function getFavorites(){try{return JSON.parse(localStorage.getItem("conexao-fm-favorites")||"[]")}catch{return []}}
+function saveFavorite(st){let ids=getFavorites();const id="db-"+st.slug;const active=ids.includes(id);ids=active?ids.filter(x=>x!==id):[...ids,id];try{localStorage.setItem("conexao-fm-favorites",JSON.stringify(ids));let saved=JSON.parse(localStorage.getItem("conexao-fm-favorite-stations")||"[]");saved=saved.filter(x=>x.id!==id);if(!active)saved.push({id,name:st.name,city:st.city||"Brasil",genre:st.genre,tagline:st.description||"Rádio online",initials:st.name.split(/\s+/).slice(0,3).map(w=>w[0]).join("").toUpperCase().slice(0,5),favicon:st.logo_url||"",streamUrl:st.stream_url,bitrate:0});localStorage.setItem("conexao-fm-favorite-stations",JSON.stringify(saved))}catch{}return !active}
+function render(st){const logo=safeUrl(st.logo_url),stream=safeUrl(st.stream_url),site=safeUrl(st.website_url),city=[st.city,st.state].filter(Boolean).join(", ")||"Brasil",cats=Array.isArray(st.categories)?st.categories:[];
+const title=st.name+" — Ouvir rádio online | Conexão FM";
+const description="Ouça "+st.name+" ao vivo na Conexão FM. "+city+". Descubra e compartilhe rádios online.";
+document.title=title;
+document.querySelector('meta[name="description"]').content=description;
+document.querySelector('meta[property="og:title"]').content=title;
+document.querySelector('meta[property="og:description"]').content=description;
+document.querySelector('meta[property="og:url"]').content=location.href;
+const canonical=document.createElement("link");canonical.rel="canonical";canonical.href=location.href;document.head.appendChild(canonical);
+if(logo){const image=document.createElement("meta");image.setAttribute("property","og:image");image.content=logo;document.head.appendChild(image)}
+const favorite=getFavorites().includes("db-"+st.slug);
+card.innerHTML='<div class="radio-brand">CONEXÃO FM · A MÚSICA QUE CONECTA VOCÊ</div><div class="radio-logo">'+(logo?'<img src="'+esc(logo)+'" alt="Logotipo de '+esc(st.name)+'">':'♫')+'</div><h1>'+esc(st.name)+'</h1><p class="radio-location">'+esc(city)+' · Rádio online</p><div class="radio-tags">'+cats.map(c=>'<span>'+esc(c)+'</span>').join("")+'</div><p class="radio-description">'+esc(st.description||"Sintonize esta emissora pela Conexão FM.")+'</p><div class="radio-actions"><button class="listen" id="listen" '+(!stream?'disabled':'')+'>▶ Ouvir rádio</button><button id="favorite" aria-pressed="'+favorite+'">'+(favorite?'♥ Remover dos favoritos':'♡ Adicionar aos favoritos')+'</button><button id="share">↗ Compartilhar rádio</button>'+(site?'<a href="'+esc(site)+'" target="_blank" rel="noopener noreferrer">Site da emissora ↗</a>':'')+'</div><div class="radio-state" id="state">'+(stream?'Pronta para sintonizar. A disponibilidade depende da transmissão da emissora.':'Esta emissora ainda não possui um link de áudio válido cadastrado.')+'</div>'+(stream?'<audio id="audio" preload="none" controls style="display:none;width:100%;margin-top:16px"></audio>':'');
+const audio=document.getElementById("audio"),listen=document.getElementById("listen"),state=document.getElementById("state");
+if(listen)listen.addEventListener("click",()=>{audio.style.display="block";if(audio.src&& !audio.paused){audio.pause();listen.textContent="▶ Ouvir rádio";state.textContent="Reprodução pausada.";return}if(!audio.src)audio.src=stream;audio.play().then(()=>{listen.textContent="Ⅱ Pausar rádio";state.textContent="Reproduzindo. Se não houver áudio, a transmissão pode estar indisponível."}).catch(()=>{state.textContent="Não foi possível iniciar o áudio. Tente novamente ou acesse o site da emissora.";})});
+if(audio){audio.addEventListener("pause",()=>{listen.textContent="▶ Ouvir rádio"});audio.addEventListener("playing",()=>{listen.textContent="Ⅱ Pausar rádio";state.textContent="Reproduzindo ao vivo."});audio.addEventListener("error",()=>{state.textContent="A emissora não disponibilizou áudio neste momento. Tente mais tarde."})}
+document.getElementById("favorite").addEventListener("click",e=>{const active=saveFavorite(st);e.currentTarget.setAttribute("aria-pressed",String(active));e.currentTarget.textContent=active?"♥ Remover dos favoritos":"♡ Adicionar aos favoritos";});
+document.getElementById("share").addEventListener("click",async()=>{const data={title:st.name+" — Conexão FM",text:"Ouça "+st.name+" na Conexão FM.",url:location.href};try{if(navigator.share)await navigator.share(data);else if(navigator.clipboard?.writeText){await navigator.clipboard.writeText(location.href);state.textContent="Link da rádio copiado."}else{window.prompt("Copie o link da rádio:",location.href)}}catch(error){if(error?.name!=="AbortError")window.prompt("Copie o link da rádio:",location.href)}});
+}
+if(!slug){showError("O link desta página está incompleto. Escolha uma emissora no catálogo.");return}
+fetch(API,{cache:"no-store"}).then(r=>{if(!r.ok)throw new Error("API indisponível");return r.json()}).then(data=>{const station=(data.stations||[]).find(s=>String(s.slug)===slug);if(!station)throw new Error("A emissora não está cadastrada no catálogo.");render(station)}).catch(error=>showError(error.message||"Não foi possível carregar os dados agora."));
+})();
+</script>
+</body>
+</html>
