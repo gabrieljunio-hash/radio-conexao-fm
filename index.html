@@ -119,7 +119,7 @@ async function loadLiveStations(){
      if(!id||id==="db-"||!name||seenIds.has(id))continue;
      let streamUrl="";
      try{const parsed=new URL(String(item.stream_url||""));if(parsed.protocol==="https:")streamUrl=parsed.href}catch{}
-     const categorySlugs=String(item.category_slugs||"").split(",").filter(Boolean);
+     const categorySlugs=Array.isArray(item.categories)?item.categories.map(value=>String(value||"").trim()).filter(Boolean):String(item.category_slugs||"").split(",").filter(Boolean);
      const genre=categoryNames[categorySlugs[0]]||"Rádio online";
      const city=[item.city,item.state].filter(Boolean).join(", ")||"Brasil";
      const favicon=safeImageUrl(item.logo_url||"");
