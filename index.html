@@ -106,6 +106,29 @@ async function loadLiveStations(){
    RADIO_STATIONS.push(station);seenIds.add(id);
    stationHealth[id]={ok:true,successes:Number(hs.successes)||0,failures:Number(hs.failures)||0,checkedAt:Date.parse(hs.checkedAt||"")||0,lastSuccess:Date.parse(hs.lastSuccess||"")||0,reason:hs.reason||""};
   }
+  // Carrega emissoras cadastradas na API própria (Cloudflare Worker + D1).
+  // Se a API estiver indisponível, o catálogo comunitário e os favoritos continuam funcionando.
+  try{
+   const apiResponse=await fetch("https://radio-conexao-api.bieljuniho.workers.dev/api/stations?limit=100",{cache:"no-store"});
+   if(apiResponse.ok){
+    const apiData=await apiResponse.json();
+    const categoryNames={"sertanejo":"Sertanejo","gospel":"Gospel","noticias":"Notícias","esportes":"Esportes","pop":"Pop","rock":"Rock","flashback":"Flashback","adulto-contemporaneo":"Adulto contemporâneo","popular":"Popular","regional":"Regional"};
+    for(const item of (apiData.stations||[])){
+     const id="db-"+String(item.slug||item.id||"").trim();
+     const name=String(item.name||"").trim();
+     if(!id||id==="db-"||!name||seenIds.has(id))continue;
+     let streamUrl="";
+     try{const parsed=new URL(String(item.stream_url||""));if(parsed.protocol==="https:")streamUrl=parsed.href}catch{}
+     const categorySlugs=String(item.category_slugs||"").split(",").filter(Boolean);
+     const genre=categoryNames[categorySlugs[0]]||"Rádio online";
+     const city=[item.city,item.state].filter(Boolean).join(", ")||"Brasil";
+     const favicon=safeImageUrl(item.logo_url||"");
+     const cover=genre==="Sertanejo"?"corange":genre==="Flashback"?"cgold":genre==="Notícias"?"cblue":genre==="Gospel"?"cgreen":genre==="Rock"?"cteal":"cpink";
+     RADIO_STATIONS.push({id,name,city,genre,tagline:String(item.description||"Rádio online"),streamUrl,websiteUrl:safeImageUrl(item.website_url||""),favicon,cover,initials:name.split(/\s+/).slice(0,3).map(w=>w[0]).join("").toUpperCase().slice(0,5),verified:false,homepageEligible:false,favoriteCount:0,rank:999999,source:"api"});
+     seenIds.add(id);
+    }
+   }
+  }catch(err){console.warn("API própria indisponível; mantendo catálogo alternativo:",err)}
   // Recupera rádios salvas em buscas externas para que os favoritos continuem disponíveis após recarregar.
   try{
    const saved=JSON.parse(localStorage.getItem("conexao-fm-favorite-stations")||"[]");
