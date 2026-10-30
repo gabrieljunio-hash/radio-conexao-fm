@@ -13,8 +13,14 @@ const ALLOWED_ORIGINS = new Set([
   "https://gabrieljunio-hash.github.io",
 ]);
 
+function isAllowedOrigin(origin) {
+  if (ALLOWED_ORIGINS.has(origin)) return true;
+  // Cloudflare Pages preview deployments for this project use unique subdomains.
+  return /^https:\/\/[a-z0-9-]+\.radio-conexao-fm\.pages\.dev$/i.test(origin);
+}
+
 function corsHeaders(origin) {
-  const allowedOrigin = ALLOWED_ORIGINS.has(origin) ? origin : "https://radio-conexao-fm.pages.dev";
+  const allowedOrigin = isAllowedOrigin(origin) ? origin : "https://radio-conexao-fm.pages.dev";
   return {
     "Access-Control-Allow-Origin": allowedOrigin,
     "Access-Control-Allow-Methods": "GET, OPTIONS",
