@@ -7,7 +7,7 @@ test("Preview carrega o catálogo real da API e apresenta rádios cadastradas", 
   page.on("pageerror", e => errors.push(e.message));
   await page.goto("/");
   await expect(page.locator("#player")).toBeVisible();
-  await expect(page.locator("#stations .station-card").first()).toBeVisible({ timeout: 20000 });
+  await expect(page.locator("#stations .station").first()).toBeVisible({ timeout: 20000 });
   await expect(page.locator("#stations")).toContainText(/./);
   await expect.poll(async () => page.locator('#stations a.station-detail-link').count(), { timeout: 20000 }).toBeGreaterThan(0);
   expect(errors).toEqual([]);
@@ -48,6 +48,13 @@ test("Preview responde corretamente em viewport mobile", async ({ page }) => {
   await page.goto("/");
   await expect(page.locator("#player")).toBeVisible();
   await expect(page.locator("body")).toBeVisible();
-  const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
-  expect(overflow).toBeFalsy();
+  const diagnostics = await page.evaluate(() => {
+    const width = document.documentElement.clientWidth;
+    return [...document.querySelectorAll("body *")].map(el => {
+      const rect = el.getBoundingClientRect();
+      const style = getComputedStyle(el);
+      return { tag: el.tagName, id: el.id, className: typeof el.className === "string" ? el.className : "", right: Math.round(rect.right), left: Math.round(rect.left), width: Math.round(rect.width), overflowX: style.overflowX };
+    }).filter(el => el.right > width + 1 || el.left < -1).sort((a,b) => b.right-a.right).slice(0,15);
+  });
+  expect(diagnostics, "Elementos que causam rolagem horizontal: " + JSON.stringify(diagnostics)).toEqual([]);
 });
