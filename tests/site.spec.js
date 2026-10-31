@@ -12,7 +12,7 @@ test("página inicial abre sem erros fatais de JavaScript", async ({ page }) => 
 
 test("páginas de explorar e favoritos mantêm a navegação", async ({ page }) => {
   await page.goto("/radios.html");
-  await expect(page.locator("#genres")).toBeVisible();
+  await expect(page.locator("#exploreCategories")).toBeVisible();
   await expect(page.getByRole("link", { name: /Favoritos/i }).first()).toHaveAttribute("href", "favoritos.html");
 
   await page.goto("/favoritos.html");
@@ -48,5 +48,5 @@ test("página individual informa quando a estação não existe", async ({ page 
     route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ stations: [], pagination: { total: 0, limit: 100, offset: 0, has_more: false } }) })
   );
   await page.goto("/radio.html?station=estacao-inexistente");
-  await expect(page.locator("body")).toContainText(/não encontrada|indisponível|não foi possível/i);
+  await expect(page.locator("body")).toContainText(/não encontramos essa rádio|não cadastrada no catálogo|indisponível/i);
 });
