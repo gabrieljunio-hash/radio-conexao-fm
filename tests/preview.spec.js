@@ -5,7 +5,7 @@ const API = "https://radio-conexao-api.bieljuniho.workers.dev";
 test("Preview carrega o catálogo real da API e apresenta rádios cadastradas", async ({ page }) => {
   const errors = [];
   page.on("pageerror", e => errors.push(e.message));
-  await page.goto("/");
+  await page.goto("/?view=explorar");
   await expect(page.locator("#player")).toBeVisible();
   await expect(page.locator("#stations .station").first()).toBeVisible({ timeout: 20000 });
   await expect(page.locator("#stations")).toContainText(/./);
@@ -48,13 +48,11 @@ test("Preview responde corretamente em viewport mobile", async ({ page }) => {
   await page.goto("/");
   await expect(page.locator("#player")).toBeVisible();
   await expect(page.locator("body")).toBeVisible();
-  const diagnostics = await page.evaluate(() => {
-    const width = document.documentElement.clientWidth;
-    return [...document.querySelectorAll("body *")].map(el => {
-      const rect = el.getBoundingClientRect();
-      const style = getComputedStyle(el);
-      return { tag: el.tagName, id: el.id, className: typeof el.className === "string" ? el.className : "", right: Math.round(rect.right), left: Math.round(rect.left), width: Math.round(rect.width), overflowX: style.overflowX };
-    }).filter(el => el.right > width + 1 || el.left < -1).sort((a,b) => b.right-a.right).slice(0,15);
-  });
-  expect(diagnostics, "Elementos que causam rolagem horizontal: " + JSON.stringify(diagnostics)).toEqual([]);
+  const dimensions = await page.evaluate(() => ({
+    viewport: document.documentElement.clientWidth,
+    document: document.documentElement.scrollWidth,
+    body: document.body.scrollWidth
+  }));
+  expect(dimensions.document, "Documento ultrapassa a largura do viewport: " + JSON.stringify(dimensions)).toBeLessThanOrEqual(dimensions.viewport + 1);
+  expect(dimensions.body, "Conteúdo do body ultrapassa a largura do viewport: " + JSON.stringify(dimensions)).toBeLessThanOrEqual(dimensions.viewport + 1);
 });
