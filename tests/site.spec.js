@@ -57,6 +57,7 @@ test("player envia heartbeat após 60 segundos e mantém a mesma sessão", async
   await page.clock.install();
   await page.addInitScript(() => {
     HTMLMediaElement.prototype.play = function () {
+      Object.defineProperty(this, "paused", { configurable: true, value: false });
       this.dispatchEvent(new Event("playing"));
       return Promise.resolve();
     };
