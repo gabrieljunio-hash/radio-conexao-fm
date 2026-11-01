@@ -78,3 +78,30 @@ test("Player envia eventos de audiência apenas para rádios do catálogo própr
   expect(payload.station_slug).toMatch(/^[a-z0-9-]+$/);
   expect(payload.session_id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
 });
+
+
+test("Painel de audiência renderiza métricas e troca período", async ({ page }) => {
+  const requests = [];
+  await page.route(API + "/api/stats**", async route => {
+    const url = new URL(route.request().url());
+    requests.push(url.searchParams.get("period"));
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        period: url.searchParams.get("period") || "7d",
+        summary: { plays: 42, sessions: 17, stops: 8, heartbeats: 120 },
+        top_stations: [{ slug: "radio-teste", name: "Rádio Teste", plays: 30, sessions: 12 }],
+        daily: [{ day: "2026-10-31", plays: 42, sessions: 17 }]
+      })
+    });
+  });
+  await page.goto("/audiencia.html");
+  await expect(page.getByRole("heading", { name: "Painel de audiência" })).toBeVisible();
+  await expect(page.locator("#plays")).toHaveText("42");
+  await expect(page.locator("#sessions")).toHaveText("17");
+  await expect(page.locator("#ranking")).toContainText("Rádio Teste");
+  await page.getByRole("button", { name: "30 dias" }).click();
+  await expect.poll(() => requests).toContain("30d");
+  await expect(page.getByRole("button", { name: "30 dias" })).toHaveAttribute("aria-pressed", "true");
+});
