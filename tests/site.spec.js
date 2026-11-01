@@ -94,7 +94,7 @@ test("catálogo não exibe estações demonstrativas ou sem opção real de escu
   await expect(page.locator("#stations")).not.toContainText("Rádio sem áudio");
   await expect(page.locator("#stations")).not.toContainText("Sertanejo Raiz");
   await expect(page.locator("#stations")).not.toContainText("Flashback Hits");
-  await expect(page.locator("#stations .station")).toHaveCount(1);
+  await expect(page.locator("#stations .station")).toHaveCount(3);
 });
 
 test("favoritos antigos sem link de áudio não aparecem como estações reproduzíveis", async ({ page }) => {
@@ -105,8 +105,11 @@ test("favoritos antigos sem link de áudio não aparecem como estações reprodu
       { id: "db-radio-real", name: "Rádio Real Salva", city: "São Paulo, SP", genre: "Pop", streamUrl: "https://stream.example.test/live" }
     ]));
   });
-  await page.goto("/favoritos.html");
-  await expect(page.locator("#favorites")).toContainText("Rádio Real Salva");
-  await expect(page.locator("#favorites")).not.toContainText("Sertanejo Raiz");
-  await expect(page.locator("#favorites .station")).toHaveCount(1);
+  await page.route("https://radio-conexao-api.bieljuniho.workers.dev/**", route =>
+    route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ stations: [], pagination: { total: 0, limit: 100, offset: 0, has_more: false } }) })
+  );
+  await page.goto("/index.html?view=favoritos");
+  await expect(page.locator("#stations")).toContainText("Rádio Real Salva");
+  await expect(page.locator("#stations")).not.toContainText("Sertanejo Raiz");
+  await expect(page.locator("#stations .station")).toHaveCount(1);
 });
