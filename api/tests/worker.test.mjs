@@ -206,3 +206,36 @@ test("admin preflight allows Authorization header", async () => {
   assert.equal(response.status, 204);
   assert.match(response.headers.get("Access-Control-Allow-Headers"), /Authorization/i);
 });
+
+
+test("admin stream tester blocks localhost and private network targets", async () => {
+  const response = await worker.fetch(
+    new Request("https://api.example.com/api/admin/test-stream", {
+      method: "POST",
+      headers: { Authorization: "Bearer test-secret-0123456789-abcdefghijklmnop", "Content-Type": "application/json" },
+      body: JSON.stringify({ stream_url: "http://127.0.0.1:8080/live" })
+    }),
+    { DB: mockDb(), ADMIN_TOKEN: "test-secret-0123456789-abcdefghijklmnop" }
+  );
+  assert.equal(response.status, 400);
+  assert.equal((await response.json()).error, "invalid_stream_url");
+});
+
+test("manual station creation cannot bypass the server-side audio test", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response("unavailable", { status: 503, headers: { "Content-Type": "text/plain" } });
+  try {
+    const response = await worker.fetch(
+      new Request("https://api.example.com/api/admin/stations", {
+        method: "POST",
+        headers: { Authorization: "Bearer test-secret-0123456789-abcdefghijklmnop", "Content-Type": "application/json" },
+        body: JSON.stringify({ name: "Rádio Teste", stream_url: "https://stream.example.test/live" })
+      }),
+      { DB: mockDb(), ADMIN_TOKEN: "test-secret-0123456789-abcdefghijklmnop" }
+    );
+    assert.equal(response.status, 422);
+    assert.equal((await response.json()).error, "stream_test_failed");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
