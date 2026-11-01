@@ -23,7 +23,7 @@ function corsHeaders(origin) {
   const allowedOrigin = isAllowedOrigin(origin) ? origin : "https://radio-conexao-fm.pages.dev";
   return {
     "Access-Control-Allow-Origin": allowedOrigin,
-    "Access-Control-Allow-Methods": "GET, OPTIONS",
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type",
     "Access-Control-Max-Age": "86400",
     "Vary": "Origin",
@@ -56,12 +56,56 @@ export default {
       return new Response(null, { status: 204, headers: corsHeaders(origin) });
     }
 
-    if (request.method !== "GET") {
-      return json({ error: "method_not_allowed" }, 405, origin);
-    }
-
     if (!env.DB) {
       return json({ error: "database_binding_missing", message: "Configure o binding D1 com o nome DB." }, 500, origin);
+    }
+
+    if (request.method === "POST" && url.pathname === "/api/events") {
+      if (!request.headers.get("Content-Type")?.toLowerCase().includes("application/json")) {
+        return json({ error: "content_type_must_be_json" }, 415, origin);
+      }
+
+      let payload;
+      try {
+        payload = await request.json();
+      } catch {
+        return json({ error: "invalid_json" }, 400, origin);
+      }
+
+      const eventType = String(payload?.event_type || "");
+      const stationSlug = String(payload?.station_slug || "").trim();
+      const sessionId = String(payload?.session_id || "").trim();
+      if (!["play", "stop", "heartbeat"].includes(eventType)) {
+        return json({ error: "invalid_event_type" }, 400, origin);
+      }
+      if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(stationSlug) || stationSlug.length > 100) {
+        return json({ error: "invalid_station_slug" }, 400, origin);
+      }
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(sessionId)) {
+        return json({ error: "invalid_session_id" }, 400, origin);
+      }
+
+      const station = await env.DB.prepare(
+        "SELECT id FROM stations WHERE slug = ? AND is_active = 1"
+      ).bind(stationSlug).first();
+      if (!station) return json({ error: "station_not_found" }, 404, origin);
+
+      if (eventType === "heartbeat") {
+        const recent = await env.DB.prepare(
+          "SELECT id FROM play_events WHERE station_id = ? AND session_id = ? AND event_type = 'heartbeat' AND occurred_at >= datetime('now', '-50 seconds') LIMIT 1"
+        ).bind(station.id, sessionId).first();
+        if (recent) return json({ ok: true, recorded: false }, 200, origin);
+      }
+
+      await env.DB.prepare(
+        "INSERT INTO play_events (station_id, event_type, session_id) VALUES (?, ?, ?)"
+      ).bind(station.id, eventType, sessionId).run();
+
+      return json({ ok: true, recorded: true }, 201, origin);
+    }
+
+    if (request.method !== "GET") {
+      return json({ error: "method_not_allowed" }, 405, origin);
     }
 
     try {
