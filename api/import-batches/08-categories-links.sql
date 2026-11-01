@@ -1,4 +1,4 @@
--- Lote 08: 35 vínculos de categoria.
+-- Lote 08: 35 vínculos.
 INSERT OR IGNORE INTO station_categories (station_id, category_id)
 SELECT s.id, c.id FROM stations s JOIN categories c ON c.slug='rock' WHERE s.slug='rb-737269d6fa3e493ca5cc883df75a327e'
 UNION ALL
