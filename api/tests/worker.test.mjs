@@ -95,6 +95,20 @@ test("POST /api/events deduplicates repeated heartbeats", async () => {
   assert.equal(DB.calls.some(call => call.type === "run"), false);
 });
 
+test("POST /api/events records a heartbeat for an active listening session", async () => {
+  const DB = mockDb();
+  const response = await postEvent(DB, {
+    event_type: "heartbeat",
+    station_slug: "radio-teste",
+    session_id: SESSION
+  });
+  assert.equal(response.status, 201);
+  assert.deepEqual(await response.json(), { ok: true, recorded: true });
+  const insert = DB.calls.find(call => call.type === "run");
+  assert.match(insert.sql, /INSERT INTO play_events/);
+  assert.deepEqual(insert.values, [24, "heartbeat", SESSION]);
+});
+
 test("API health route remains available", async () => {
   const response = await worker.fetch(
     new Request("https://api.example.com/api/health"),
