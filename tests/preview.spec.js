@@ -80,6 +80,32 @@ test("Player envia eventos de audiência apenas para rádios do catálogo própr
 });
 
 
+test("Player envia heartbeat após 60 segundos de reprodução contínua", async ({ page }) => {
+  const events = [];
+  await page.clock.install();
+  await page.addInitScript(() => {
+    HTMLMediaElement.prototype.play = function () {
+      this.dispatchEvent(new Event("playing"));
+      return Promise.resolve();
+    };
+  });
+  await page.route(API + "/api/events", async route => {
+    events.push(route.request().postDataJSON());
+    await route.fulfill({ status: 201, contentType: "application/json", body: JSON.stringify({ ok: true, recorded: true }) });
+  });
+  await page.goto("/?view=explorar");
+  const playButton = page.locator('#stations [data-play^="db-"]').first();
+  await expect(playButton).toBeVisible({ timeout: 20000 });
+  await playButton.click();
+  await expect.poll(() => events.some(event => event.event_type === "play")).toBeTruthy();
+  await page.clock.fastForward(60000);
+  await expect.poll(() => events.some(event => event.event_type === "heartbeat")).toBeTruthy();
+  const play = events.find(event => event.event_type === "play");
+  const heartbeat = events.find(event => event.event_type === "heartbeat");
+  expect(heartbeat.station_slug).toBe(play.station_slug);
+  expect(heartbeat.session_id).toBe(play.session_id);
+});
+
 test("Painel de audiência renderiza métricas e troca período", async ({ page }) => {
   const requests = [];
   await page.route(API + "/api/stats**", async route => {
