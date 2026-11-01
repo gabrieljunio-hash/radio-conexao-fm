@@ -46,15 +46,15 @@
   const chart=$('chart');chart.replaceChildren();
   const days=period==='7d'?7:30;
   const byDay=new Map(rows.map(row=>[row.day,Number(row.plays||0)]));
-  const today=new Date();today.setHours(0,0,0,0);
+  const today=new Date();today.setUTCHours(0,0,0,0);
   const values=[];
-  for(let i=days-1;i>=0;i--){const date=new Date(today);date.setDate(today.getDate()-i);const key=date.getFullYear()+'-'+String(date.getMonth()+1).padStart(2,'0')+'-'+String(date.getDate()).padStart(2,'0');values.push({key,value:byDay.get(key)||0,date})}
+  for(let i=days-1;i>=0;i--){const date=new Date(today);date.setUTCDate(today.getUTCDate()-i);const key=date.getUTCFullYear()+'-'+String(date.getUTCMonth()+1).padStart(2,'0')+'-'+String(date.getUTCDate()).padStart(2,'0');values.push({key,value:byDay.get(key)||0,date})}
   const max=Math.max(1,...values.map(x=>x.value));
   values.forEach(item=>{
    const wrap=document.createElement('div');wrap.className='bar-wrap';
    const val=document.createElement('span');val.className='bar-value';val.textContent=item.value?number(item.value):'';
    const bar=document.createElement('div');bar.className='bar';bar.style.height=Math.max(2,item.value/max*145)+'px';bar.title=item.key+': '+number(item.value)+' reproduções';
-   const label=document.createElement('span');label.className='bar-label';label.textContent=period==='7d'?String(item.date.getDate()).padStart(2,'0')+'/'+String(item.date.getMonth()+1).padStart(2,'0'):String(item.date.getDate());
+   const label=document.createElement('span');label.className='bar-label';label.textContent=period==='7d'?String(item.date.getUTCDate()).padStart(2,'0')+'/'+String(item.date.getUTCMonth()+1).padStart(2,'0'):String(item.date.getUTCDate());
    wrap.append(val,bar,label);chart.append(wrap);
   });
  }
