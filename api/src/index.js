@@ -94,7 +94,7 @@ export default {
         const recent = await env.DB.prepare(
           "SELECT id FROM play_events WHERE station_id = ? AND session_id = ? AND event_type = 'heartbeat' AND occurred_at >= datetime('now', '-50 seconds') LIMIT 1"
         ).bind(station.id, sessionId).first();
-        if (recent) return json({ ok: true, recorded: false }, 200, origin);
+        if (recent) return json({ ok: true, recorded: false }, 202, origin);
       }
 
       await env.DB.prepare(
