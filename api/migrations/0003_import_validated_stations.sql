@@ -162,8 +162,7 @@ VALUES
 INSERT OR IGNORE INTO station_categories (station_id, category_id)
 SELECT s.id, c.id
 FROM stations s
-JOIN categories c ON c.slug = 'placeholder-never-match'
-WHERE (s.slug, c.slug) IN (VALUES
+JOIN categories c ON (s.slug, c.slug) IN (VALUES
   ('rb-7ada8a815ae1418c8f1851d2f38d86a4','mpb'),
   ('rb-ef07dbb211764b09bb879e841300c3cf','jazz-blues'),
   ('rb-3998f9aeed80431981090acb29efb256','sertanejo'),
