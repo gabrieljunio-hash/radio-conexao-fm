@@ -23,6 +23,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Test Worker API
+        run: node --test api/tests/worker.test.mjs
       - name: Install test dependencies
         run: npm install --no-save @playwright/test
       - name: Install Chromium
