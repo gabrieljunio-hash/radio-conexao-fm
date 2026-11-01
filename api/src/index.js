@@ -152,7 +152,7 @@ async function handleAdmin(request, env, url, origin) {
       logo_url: safePublicUrl(item.favicon),
       country_code: String(item.countrycode || country || "BR").slice(0, 2).toUpperCase(),
       state: String(item.state || "").slice(0, 80),
-      city: String(item.state || "").slice(0, 100),
+      city: String(item.city || "").slice(0, 100),
       language: String(item.language || "pt").split(",")[0].slice(0, 20),
       tags: String(item.tags || "").split(",").map(tagValue => tagValue.trim().toLowerCase()).filter(Boolean).slice(0, 12),
       bitrate: Number(item.bitrate || 0),
@@ -232,8 +232,11 @@ async function handleAdmin(request, env, url, origin) {
     const placeholders = clean.map(() => "?").join(",");
     const existing = await env.DB.prepare("SELECT lower(stream_url) AS stream_url FROM stations WHERE lower(stream_url) IN (" + placeholders + ")")
       .bind(...clean.map(item => item.stream_url.toLowerCase())).all();
+    const existingSlugs = await env.DB.prepare("SELECT slug FROM stations WHERE slug IN (" + clean.map(() => "?").join(",") + ")")
+      .bind(...clean.map(item => item.slug)).all();
     const existingUrls = new Set((existing.results || []).map(item => item.stream_url));
-    const fresh = clean.filter(item => !existingUrls.has(item.stream_url.toLowerCase()));
+    const slugSet = new Set((existingSlugs.results || []).map(item => item.slug));
+    const fresh = clean.filter(item => !existingUrls.has(item.stream_url.toLowerCase()) && !slugSet.has(item.slug));
     if (!fresh.length) return adminJson({ ok: true, imported: 0, duplicates: clean.length, message: "Todas as rádios já estavam cadastradas." }, 200, origin);
     const values = fresh.map(() => "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 0)").join(",");
     const bindings = fresh.flatMap(item => [item.slug, item.name, item.stream_url, item.website_url, item.logo_url, item.country_code, item.state, item.city, item.language, item.tags.join(", ")]);
