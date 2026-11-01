@@ -145,7 +145,7 @@ async function handleAdmin(request, env, url, origin) {
     const limit = Math.min(Math.max(Number.parseInt(url.searchParams.get("limit") || "50", 10) || 50, 1), 100);
     const offset = Math.min(Math.max(Number.parseInt(url.searchParams.get("offset") || "0", 10) || 0, 0), 100000);
     const where = q ? "WHERE s.name LIKE ? OR s.city LIKE ? OR s.slug LIKE ?" : "";
-    const term = "%" + q.replace(/[\\%_]/g, "\\export default {") + "%";
+    const term = "%" + q.replace(/[\\%_]/g, character => "\\" + character) + "%";
     const statement = env.DB.prepare(`SELECT s.id, s.slug, s.name, s.stream_url, s.logo_url, s.country_code, s.state, s.city, s.is_active, s.is_verified, GROUP_CONCAT(c.name) AS category_names
       FROM stations s LEFT JOIN station_categories sc ON sc.station_id = s.id
       LEFT JOIN categories c ON c.id = sc.category_id ${where}
