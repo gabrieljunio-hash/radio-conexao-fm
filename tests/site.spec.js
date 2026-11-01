@@ -121,5 +121,5 @@ test("guia de rádio online oferece orientações práticas e navegação funcio
   await expect(page.locator("h1")).toContainText(/Como ouvir/i);
   await expect(page.locator("#internet")).toContainText("128 kbps");
   await expect(page.locator("#problemas")).toContainText(/O que fazer quando a rádio não toca/i);
-  await expect(page.getByRole("link", { name: /Abrir catálogo/i })).toHaveAttribute("href", "radios.html");
+  await expect(page.getByRole("link", { name: /Encontrar uma rádio/i })).toHaveAttribute("href", "radios.html");
 });
