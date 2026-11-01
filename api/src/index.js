@@ -117,6 +117,55 @@ export default {
         }, 200, origin);
       }
 
+      if (url.pathname === "/api/stats") {
+        const period = url.searchParams.get("period") === "30d" ? "30d" : "7d";
+        const modifier = period === "30d" ? "-30 days" : "-7 days";
+        const since = "datetime('now', ?)";
+        const [summary, top, daily] = await Promise.all([
+          env.DB.prepare(
+            `SELECT
+               SUM(CASE WHEN event_type = 'play' THEN 1 ELSE 0 END) AS plays,
+               COUNT(DISTINCT CASE WHEN event_type = 'play' THEN session_id END) AS sessions,
+               SUM(CASE WHEN event_type = 'stop' THEN 1 ELSE 0 END) AS stops,
+               SUM(CASE WHEN event_type = 'heartbeat' THEN 1 ELSE 0 END) AS heartbeats
+             FROM play_events WHERE occurred_at >= ${since}`
+          ).bind(modifier).first(),
+          env.DB.prepare(
+            `SELECT s.slug, s.name, s.logo_url,
+                    SUM(CASE WHEN e.event_type = 'play' THEN 1 ELSE 0 END) AS plays,
+                    COUNT(DISTINCT CASE WHEN e.event_type = 'play' THEN e.session_id END) AS sessions
+             FROM play_events e
+             JOIN stations s ON s.id = e.station_id
+             WHERE e.occurred_at >= ${since} AND s.is_active = 1
+             GROUP BY s.id, s.slug, s.name, s.logo_url
+             HAVING SUM(CASE WHEN e.event_type = 'play' THEN 1 ELSE 0 END) > 0
+             ORDER BY plays DESC, sessions DESC, s.name COLLATE NOCASE
+             LIMIT 10`
+          ).bind(modifier).all(),
+          env.DB.prepare(
+            `SELECT date(occurred_at) AS day,
+                    SUM(CASE WHEN event_type = 'play' THEN 1 ELSE 0 END) AS plays,
+                    COUNT(DISTINCT CASE WHEN event_type = 'play' THEN session_id END) AS sessions
+             FROM play_events
+             WHERE occurred_at >= ${since}
+             GROUP BY date(occurred_at)
+             ORDER BY day ASC`
+          ).bind(modifier).all()
+        ]);
+
+        return json({
+          period,
+          summary: {
+            plays: Number(summary?.plays || 0),
+            sessions: Number(summary?.sessions || 0),
+            stops: Number(summary?.stops || 0),
+            heartbeats: Number(summary?.heartbeats || 0)
+          },
+          top_stations: top.results || [],
+          daily: daily.results || []
+        }, 200, origin);
+      }
+
       if (url.pathname === "/api/categories") {
         const { results } = await env.DB.prepare(
           `SELECT c.id, c.slug, c.name, COUNT(DISTINCT sc.station_id) AS station_count
