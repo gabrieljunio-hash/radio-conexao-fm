@@ -50,3 +50,26 @@ test("página individual informa quando a estação não existe", async ({ page 
   await page.goto("/radio.html?station=estacao-inexistente");
   await expect(page.locator("body")).toContainText(/não encontramos essa rádio|não cadastrada no catálogo|indisponível/i);
 });
+
+
+test("página de contato oferece um canal funcional de atendimento", async ({ page }) => {
+  await page.goto("/contato.html");
+  await expect(page).toHaveTitle(/Contato.*Conexão FM/i);
+  await expect(page.getByRole("link", { name: /WhatsApp/i })).toHaveAttribute("href", /^https:\/\/wa\.me\//);
+});
+
+test("política de privacidade informa sobre Google AdSense e controle de anúncios", async ({ page }) => {
+  await page.goto("/privacidade.html");
+  await expect(page.locator("body")).toContainText(/Google AdSense/i);
+  await expect(page.getByRole("link", { name: /Configurações de anúncios do Google/i })).toHaveAttribute("href", "https://adssettings.google.com/");
+});
+
+test("sitemap XML contém contato e não possui escape de newline literal", async ({ request }) => {
+  const response = await request.get("/sitemap.xml");
+  expect(response.ok()).toBeTruthy();
+  const xml = await response.text();
+  expect(xml).toContain("<urlset");
+  expect(xml).toContain("https://radio-conexao-fm.pages.dev/contato.html");
+  expect(xml).toContain("</urlset>");
+  expect(xml).not.toContain("\\n</urlset>");
+});
