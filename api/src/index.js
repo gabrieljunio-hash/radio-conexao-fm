@@ -76,6 +76,15 @@ function safePublicUrl(value) {
   }
 }
 
+function constantTimeEqual(left, right) {
+  if (left.length !== right.length) return false;
+  let difference = 0;
+  for (let index = 0; index < left.length; index += 1) {
+    difference |= left.charCodeAt(index) ^ right.charCodeAt(index);
+  }
+  return difference === 0;
+}
+
 function makeSlug(value) {
   return String(value || "")
     .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
@@ -88,11 +97,10 @@ async function readJson(request) {
 }
 
 async function handleAdmin(request, env, url, origin) {
-  if (!env.ADMIN_TOKEN) return adminJson({ error: "admin_not_configured", message: "Configure o secret ADMIN_TOKEN no Worker." }, 503, origin);
+  if (!env.ADMIN_TOKEN || env.ADMIN_TOKEN.length < 32) return adminJson({ error: "admin_not_configured", message: "Configure um secret ADMIN_TOKEN com pelo menos 32 caracteres no Worker." }, 503, origin);
   const authorization = request.headers.get("Authorization") || "";
   const supplied = authorization.startsWith("Bearer ") ? authorization.slice(7) : "";
-  if (!supplied || supplied.length !== env.ADMIN_TOKEN.length ||
-      ![...supplied].every((char, index) => char === env.ADMIN_TOKEN[index])) {
+  if (!constantTimeEqual(supplied, env.ADMIN_TOKEN)) {
     return adminJson({ error: "unauthorized" }, 401, origin);
   }
 
