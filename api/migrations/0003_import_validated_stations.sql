@@ -158,13 +158,8 @@ VALUES
 ('rb-f13d5793d1d7446f803a2653c0518b8e','Rádio Trianon 740 AM','https://shout25.crossradio.com.br:18014/stream',NULL,'https://img.radios.com.br/radio/lg/radio14495_1508409250.jpg','BR',NULL,'Sao Paulo','pt-BR','eclectic',1,0),
 ('rb-cdaa0235dd3e475b9e9cc7c9b13b312b','WebRadioBR','https://stream.webradiobr.insidesign.com.br/listen/webradiobr/radio.mp3',NULL,'https://webradiobr.insidesign.com.br/logo-512.png','BR',NULL,NULL,'pt-BR','alternative, dance',1,0);
 
-CREATE TEMP TABLE IF NOT EXISTS import_station_categories (
-  slug TEXT PRIMARY KEY,
-  category_slug TEXT NOT NULL
-);
-DELETE FROM import_station_categories;
-
-INSERT OR IGNORE INTO import_station_categories (slug, category_slug) VALUES
+WITH import_station_categories (slug, category_slug) AS (
+  VALUES
 ('rb-7ada8a815ae1418c8f1851d2f38d86a4','mpb'),
 ('rb-ef07dbb211764b09bb879e841300c3cf','jazz-blues'),
 ('rb-3998f9aeed80431981090acb29efb256','sertanejo'),
@@ -305,12 +300,11 @@ INSERT OR IGNORE INTO import_station_categories (slug, category_slug) VALUES
 ('rb-2227864807934eaa9d8577c87b93fbee','rock'),
 ('rb-9f52a54e979642b1b4a579b389677bae','flashback'),
 ('rb-f13d5793d1d7446f803a2653c0518b8e','pop'),
-('rb-cdaa0235dd3e475b9e9cc7c9b13b312b','rock');
-
+('rb-cdaa0235dd3e475b9e9cc7c9b13b312b','rock'
+)
 INSERT OR IGNORE INTO station_categories (station_id, category_id)
 SELECT s.id, c.id
 FROM import_station_categories x
 JOIN stations s ON s.slug = x.slug
 JOIN categories c ON c.slug = x.category_slug;
 
-DROP TABLE import_station_categories;
