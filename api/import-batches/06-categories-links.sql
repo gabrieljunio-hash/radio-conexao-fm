@@ -1,4 +1,4 @@
--- Lote 06: 35 vínculos de categoria.
+-- Lote 06: 35 vínculos.
 INSERT OR IGNORE INTO station_categories (station_id, category_id)
 SELECT s.id, c.id FROM stations s JOIN categories c ON c.slug='mpb' WHERE s.slug='rb-7ada8a815ae1418c8f1851d2f38d86a4'
 UNION ALL
