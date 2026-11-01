@@ -1,4 +1,4 @@
--- Lote 03: 30 emissoras. Executar depois de 00-categories.sql.
+-- Lote 03: 30 rádios.
 INSERT OR IGNORE INTO stations
   (slug,name,stream_url,website_url,logo_url,country_code,state,city,language,description,is_active,is_verified)
 VALUES
