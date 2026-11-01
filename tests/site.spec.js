@@ -123,3 +123,13 @@ test("guia de rádio online oferece orientações práticas e navegação funcio
   await expect(page.locator("#problemas")).toContainText(/O que fazer quando a rádio não toca/i);
   await expect(page.getByRole("link", { name: /Encontrar uma rádio/i })).toHaveAttribute("href", "radios.html");
 });
+
+
+test("painel administrativo carrega bloqueado e não é indexável", async ({ page }) => {
+  await page.goto("/admin.html");
+  await expect(page).toHaveTitle(/Administração.*Conexão FM/i);
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", "noindex,nofollow");
+  await expect(page.getByRole("heading", { name: "Acesso protegido" })).toBeVisible();
+  await expect(page.getByLabel("Token de acesso")).toHaveAttribute("type", "password");
+  await expect(page.locator("#dashboard")).toBeHidden();
+});
