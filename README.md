@@ -34,3 +34,14 @@ A página inicial consulta o diretório comunitário Radio Browser para carregar
 No arquivo `index.html`, procure `const RADIO_STATIONS`. Em cada estação manual, troque `streamUrl:""` por um endereço direto de áudio autorizado pela emissora. Links para páginas comuns não funcionam como stream. Algumas estações bloqueiam reprodução externa; use HTTPS sempre que possível.
 
 As estações demonstrativas iniciais ainda não têm áudio configurado; as estações reais são carregadas do diretório quando a página abre. Os favoritos ficam salvos localmente no navegador do dispositivo atual e não sincronizam automaticamente entre aparelhos. A página de favoritos usa `noindex` porque o conteúdo é pessoal e local ao dispositivo.
+
+## Patrocinadores locais
+A área de parceiros da página inicial fica oculta enquanto não houver patrocinadores ativos. Para cadastrar um parceiro, edite `data/sponsors.json` e adicione um item em `sponsors` com:
+- `active`: `true` para exibir ou `false` para pausar.
+- `name` e `description`: nome e texto curto.
+- `destination_url`: destino HTTPS do parceiro.
+- `image_url` (opcional): imagem HTTPS do parceiro.
+- `image_alt` (opcional): texto alternativo da imagem.
+- `starts_at` e `ends_at` (opcionais): datas ISO 8601 para início e fim da campanha.
+
+O site exibe até quatro parceiros ativos, identifica o conteúdo como patrocinado e ignora destinos que não sejam HTTPS. A configuração inicial está vazia; nenhum anúncio é exibido automaticamente.
