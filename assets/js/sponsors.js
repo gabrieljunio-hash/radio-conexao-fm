@@ -3,6 +3,7 @@
   const list=document.getElementById("sponsorCards");
   if(!section||!list)return;
   const safeUrl=value=>{
+    if(typeof value!=="string"||!value.trim())return null;
     try{const url=new URL(value,location.href);return url.protocol==="https:"?url.href:null}catch{return null}
   };
   const isInWindow=sponsor=>{
