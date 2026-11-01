@@ -50,3 +50,41 @@ test("página individual informa quando a estação não existe", async ({ page 
   await page.goto("/radio.html?station=estacao-inexistente");
   await expect(page.locator("body")).toContainText(/não encontramos essa rádio|não cadastrada no catálogo|indisponível/i);
 });
+
+
+test("área de patrocinadores permanece oculta quando não há parceiros ativos", async ({ page }) => {
+  await page.route("**/data/sponsors.json", route => route.fulfill({
+    status: 200,
+    contentType: "application/json",
+    body: JSON.stringify({ sponsors: [] })
+  }));
+  await page.goto("/");
+  await expect(page.locator("#sponsorSection")).toBeHidden();
+});
+
+test("área de patrocinadores exibe somente parceiros ativos com destino HTTPS", async ({ page }) => {
+  await page.route("**/data/sponsors.json", route => route.fulfill({
+    status: 200,
+    contentType: "application/json",
+    body: JSON.stringify({ sponsors: [
+      { active: true, name: "Comércio Parceiro", description: "Apoia a música local.", destination_url: "https://example.com", starts_at: "2026-01-01T00:00:00Z" },
+      { active: true, name: "Destino inseguro", description: "Não deve aparecer.", destination_url: "javascript:alert(1)" },
+      { active: false, name: "Patrocínio pausado", description: "Não deve aparecer.", destination_url: "https://example.org" },
+      { active: true, name: "Sem destino", description: "Não deve aparecer.", destination_url: "" }
+    ] })
+  }));
+  await page.goto("/");
+  await expect(page.locator("#sponsorSection")).toBeVisible();
+  await expect(page.locator("#sponsorCards .sponsor-card")).toHaveCount(1);
+  await expect(page.locator("#sponsorCards")).toContainText("Comércio Parceiro");
+  await expect(page.locator("#sponsorCards")).not.toContainText("Destino inseguro");
+  await expect(page.locator("#sponsorCards a")).toHaveAttribute("rel", "sponsored noopener noreferrer");
+  await expect(page.locator("#sponsorCards a")).toHaveAttribute("href", "https://example.com/");
+});
+
+
+test("página comercial apresenta contato de WhatsApp correto", async ({ page }) => {
+  await page.goto("/anuncie.html");
+  await expect(page.getByRole("heading", { name: "Conecte sua marca a novos ouvintes." })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Conversar pelo WhatsApp/ })).toHaveAttribute("href", "https://wa.me/551996547439?text=Ol%C3%A1%21%20Tenho%20interesse%20em%20anunciar%20na%20Conex%C3%A3o%20FM.");
+});
