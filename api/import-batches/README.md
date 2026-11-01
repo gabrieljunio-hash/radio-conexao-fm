@@ -5,7 +5,7 @@ O Console D1 estava rejeitando o arquivo único de 41 KB. Estes arquivos dividem
 Execute na ordem, um arquivo por vez, no banco `radio-conexao-db`:
 1. `00-categories.sql`
 2. `01-stations.sql` até `05-stations.sql`
-3. `06-categories-links.sql` e `07-categories-links.sql`
+3. `06-categories-links.sql` até `09-categories-links.sql`
 
 Todos os comandos usam `INSERT OR IGNORE`, então podem ser repetidos sem duplicar rádios ou vínculos. Não execute a migration antiga junto com estes lotes.
 
