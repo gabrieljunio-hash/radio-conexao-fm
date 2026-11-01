@@ -136,8 +136,9 @@ async function handleAdmin(request, env, url, origin) {
   }
 
   if (request.method === "GET" && url.pathname === "/api/admin/discover") {
-    const limit = Math.min(Math.max(Number.parseInt(url.searchParams.get("limit") || "50", 10) || 50, 1), 100);
-    const params = new URLSearchParams({ hidebroken: "true", order: "clickcount", reverse: "true", limit: String(limit) });
+    const limit = Math.min(Math.max(Number.parseInt(url.searchParams.get("limit") || "100", 10) || 100, 1), 100);
+    const offset = Math.min(Math.max(Number.parseInt(url.searchParams.get("offset") || "0", 10) || 0, 0), 5000);
+    const params = new URLSearchParams({ hidebroken: "true", order: "clickcount", reverse: "true", limit: String(limit), offset: String(offset) });
     const name = (url.searchParams.get("name") || "").trim().slice(0, 80);
     const country = (url.searchParams.get("country") || "BR").trim().toUpperCase().slice(0, 2);
     const tag = (url.searchParams.get("tag") || "").trim().slice(0, 50);
