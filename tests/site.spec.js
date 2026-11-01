@@ -113,3 +113,13 @@ test("favoritos antigos sem link de áudio não aparecem como estações reprodu
   await expect(page.locator("#stations")).not.toContainText("Sertanejo Raiz");
   await expect(page.locator("#stations .station")).toHaveCount(1);
 });
+
+
+test("guia de rádio online oferece orientações práticas e navegação funcional", async ({ page }) => {
+  await page.goto("/guia-radio-online.html");
+  await expect(page).toHaveTitle(/Guia para ouvir rádio online/i);
+  await expect(page.locator("h1")).toContainText(/Como ouvir/i);
+  await expect(page.locator("#internet")).toContainText("128 kbps");
+  await expect(page.locator("#problemas")).toContainText(/O que fazer quando a rádio não toca/i);
+  await expect(page.getByRole("link", { name: /Abrir catálogo/i })).toHaveAttribute("href", "radios.html");
+});
