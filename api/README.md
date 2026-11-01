@@ -18,6 +18,7 @@ A publicação não altera o site Pages nem a branch `main`. Não remova o bindi
 ## Rotas públicas
 
 - `GET /api/health` — verifica a conexão com D1.
+- `GET /api/stats?period=7d|30d` — retorna métricas agregadas de audiência, sessões estimadas, ranking e série diária.
 - `GET /api/categories` — lista categorias e quantidade de rádios associadas.
 - `GET /api/stations` — lista rádios ativas.
 - `POST /api/events` — registra eventos agregados de reprodução para rádios do catálogo próprio. Recebe `event_type` (`play`, `stop` ou `heartbeat`), `station_slug` e `session_id` UUID v4.
@@ -35,6 +36,8 @@ https://SEU-WORKER.workers.dev/api/stations?limit=20
 
 - As rotas de catálogo são somente leitura; `POST /api/events` é a única rota de gravação pública.
 - A rota de audiência não aceita dados pessoais e não grava endereço IP na tabela `play_events`.
-- Não existe painel administrativo de audiência nesta etapa; os eventos são a base para relatórios futuros.
-- O banco está inicialmente sem emissoras cadastradas; por isso `/api/stations` deve retornar uma lista vazia.
+- O painel público `audiencia.html` exibe somente métricas agregadas; não expõe IDs de sessão.
+- Sessões estimadas são contagens de identificadores temporários, não pessoas únicas.
+- A API de estatísticas limita a consulta aos últimos 7 ou 30 dias.
+- O painel pode mostrar zeros até que existam reproduções registradas.
 - CORS permite o domínio Pages atual e o domínio GitHub Pages antigo.
