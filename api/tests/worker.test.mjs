@@ -165,7 +165,7 @@ test("admin API rejects requests without a valid bearer token", async () => {
   const DB = mockDb();
   const response = await worker.fetch(
     new Request("https://api.example.com/api/admin/summary"),
-    { DB, ADMIN_TOKEN: "long-test-secret" }
+    { DB, ADMIN_TOKEN: "test-secret-0123456789-abcdefghijklmnop" }
   );
   assert.equal(response.status, 401);
   assert.deepEqual(await response.json(), { error: "unauthorized" });
@@ -185,9 +185,9 @@ test("admin API summary requires the bearer token and disables caching", async (
   const DB = mockDb();
   const response = await worker.fetch(
     new Request("https://api.example.com/api/admin/summary", {
-      headers: { Authorization: "Bearer long-test-secret", Origin: ORIGIN }
+      headers: { Authorization: "Bearer test-secret-0123456789-abcdefghijklmnop", Origin: ORIGIN }
     }),
-    { DB, ADMIN_TOKEN: "long-test-secret" }
+    { DB, ADMIN_TOKEN: "test-secret-0123456789-abcdefghijklmnop" }
   );
   assert.equal(response.status, 200);
   assert.equal(response.headers.get("Cache-Control"), "no-store");
