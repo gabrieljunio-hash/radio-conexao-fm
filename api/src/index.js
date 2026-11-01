@@ -96,6 +96,27 @@ async function readJson(request) {
   try { return await request.json(); } catch { return null; }
 }
 
+async function testPublicStream(streamUrl) {
+  try {
+    const response = await fetch(streamUrl, {
+      method: "GET",
+      headers: { Range: "bytes=0-1", "User-Agent": "RadioConexaoFM/1.0" },
+      redirect: "follow",
+      signal: AbortSignal.timeout(7000)
+    });
+    const contentType = response.headers.get("content-type") || "";
+    try { await response.body?.cancel(); } catch {}
+    return {
+      ok: (response.status === 200 || response.status === 206) && !/text\/html|application\/json/i.test(contentType),
+      status: response.status,
+      content_type: contentType,
+      final_url: response.url
+    };
+  } catch (error) {
+    return { ok: false, error: "stream_unreachable", message: String(error?.name || "NetworkError") };
+  }
+}
+
 async function handleAdmin(request, env, url, origin) {
   if (!env.ADMIN_TOKEN || env.ADMIN_TOKEN.length < 32) return adminJson({ error: "admin_not_configured", message: "Configure um secret ADMIN_TOKEN com pelo menos 32 caracteres no Worker." }, 503, origin);
   const authorization = request.headers.get("Authorization") || "";
@@ -175,21 +196,8 @@ async function handleAdmin(request, env, url, origin) {
     const body = await readJson(request);
     const streamUrl = safePublicUrl(body?.stream_url);
     if (!streamUrl) return adminJson({ error: "invalid_stream_url" }, 400, origin);
-    try {
-      const response = await fetch(streamUrl, {
-        method: "GET",
-        headers: { Range: "bytes=0-1", "User-Agent": "RadioConexaoFM/1.0" },
-        redirect: "follow",
-        signal: AbortSignal.timeout(7000)
-      });
-      const contentType = response.headers.get("content-type") || "";
-      try { await response.body?.cancel(); } catch {}
-      const playable = (response.status === 200 || response.status === 206) &&
-        !/text\/html|application\/json/i.test(contentType);
-      return adminJson({ ok: playable, status: response.status, content_type: contentType, final_url: response.url }, 200, origin);
-    } catch (error) {
-      return adminJson({ ok: false, error: "stream_unreachable", message: String(error?.name || "NetworkError") }, 200, origin);
-    }
+    const result = await testPublicStream(streamUrl);
+    return adminJson(result, 200, origin);
   }
 
   if (request.method === "POST" && url.pathname === "/api/admin/stations") {
@@ -197,6 +205,8 @@ async function handleAdmin(request, env, url, origin) {
     const name = String(body?.name || "").trim().slice(0, 120);
     const streamUrl = safePublicUrl(body?.stream_url);
     if (name.length < 2 || !streamUrl) return adminJson({ error: "name_and_valid_stream_required" }, 400, origin);
+    const streamTest = await testPublicStream(streamUrl);
+    if (!streamTest.ok) return adminJson({ error: "stream_test_failed", test: streamTest }, 422, origin);
     const duplicate = await env.DB.prepare("SELECT id FROM stations WHERE lower(stream_url) = lower(?) LIMIT 1").bind(streamUrl).first();
     if (duplicate) return adminJson({ error: "duplicate_stream", station_id: duplicate.id }, 409, origin);
     const slug = makeSlug(name) + "-" + crypto.randomUUID().slice(0, 8);
