@@ -1,4 +1,4 @@
--- Lote 07: 35 vínculos de categoria.
+-- Lote 07: 35 vínculos.
 INSERT OR IGNORE INTO station_categories (station_id, category_id)
 SELECT s.id, c.id FROM stations s JOIN categories c ON c.slug='eletronica' WHERE s.slug='rb-55594c6ebd3d42acab88edc155ba303f'
 UNION ALL
