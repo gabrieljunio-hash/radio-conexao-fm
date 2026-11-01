@@ -103,3 +103,59 @@ test("API health route remains available", async () => {
   assert.equal(response.status, 200);
   assert.deepEqual(await response.json(), { status: "online", database: "connected" });
 });
+
+
+test("GET /api/stats returns aggregated metrics for the selected period", async () => {
+  const calls = [];
+  const DB = {
+    prepare(sql) {
+      return {
+        sql,
+        values: [],
+        bind(...values) { this.values = values; return this; },
+        async first() {
+          calls.push({ type: "first", sql: this.sql, values: this.values });
+          return { plays: 12, sessions: 5, stops: 3, heartbeats: 24 };
+        },
+        async all() {
+          calls.push({ type: "all", sql: this.sql, values: this.values });
+          if (this.sql.includes("GROUP BY s.id")) {
+            return { results: [{ slug: "radio-teste", name: "Rádio Teste", logo_url: null, plays: 8, sessions: 4 }] };
+          }
+          return { results: [{ day: "2026-10-31", plays: 8, sessions: 4 }] };
+        }
+      };
+    }
+  };
+  const response = await worker.fetch(
+    new Request("https://api.example.com/api/stats?period=30d", { headers: { Origin: ORIGIN } }),
+    { DB }
+  );
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get("Access-Control-Allow-Origin"), ORIGIN);
+  const data = await response.json();
+  assert.equal(data.period, "30d");
+  assert.deepEqual(data.summary, { plays: 12, sessions: 5, stops: 3, heartbeats: 24 });
+  assert.equal(data.top_stations[0].slug, "radio-teste");
+  assert.equal(data.daily[0].plays, 8);
+  assert.equal(calls.length, 3);
+  assert.ok(calls.every(call => call.values[0] === "-30 days"));
+});
+
+test("GET /api/stats defaults to 7 days and never returns session identifiers", async () => {
+  const DB = {
+    prepare(sql) {
+      return {
+        sql, values: [],
+        bind(...values) { this.values = values; return this; },
+        async first() { return { plays: 0, sessions: 0, stops: 0, heartbeats: 0 }; },
+        async all() { return { results: [] }; }
+      };
+    }
+  };
+  const response = await worker.fetch(new Request("https://api.example.com/api/stats?period=invalid"), { DB });
+  const data = await response.json();
+  assert.equal(response.status, 200);
+  assert.equal(data.period, "7d");
+  assert.equal(JSON.stringify(data).includes(SESSION), false);
+});
