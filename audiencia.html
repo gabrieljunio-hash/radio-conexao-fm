@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#17213A"><meta name="robots" content="index,follow">
+<meta name="description" content="Acompanhe os números agregados de audiência da Conexão FM.">
+<link rel="canonical" href="https://radio-conexao-fm.pages.dev/audiencia.html">
+<link rel="icon" type="image/svg+xml" href="assets/radio.svg">
+<link rel="stylesheet" href="assets/css/site.css?v=20261028-ux27">
+<title>Audiência | Conexão FM</title>
+<style>
+.stats-main{max-width:1100px}.stats-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin:26px 0 22px}.stats-head h1{font:800 clamp(27px,4vw,38px)/1.15 Manrope;margin:8px 0}.stats-head p{color:var(--muted);margin:0;line-height:1.6}.period-switch{display:flex;gap:7px;background:#e9e8e3;padding:5px;border-radius:11px;flex-shrink:0}.period-switch button{border:0;border-radius:8px;padding:9px 13px;background:transparent;color:var(--muted);font-weight:700}.period-switch button[aria-pressed=true]{background:#fff;color:var(--text);box-shadow:0 1px 4px #17213a18}.stats-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px}.stat-card,.panel{background:var(--panel);border:1px solid var(--line);border-radius:15px;padding:19px;min-width:0}.stat-card small{color:var(--muted);font-weight:600}.stat-card strong{display:block;font:800 clamp(26px,4vw,34px) Manrope;margin-top:10px;letter-spacing:-1px}.stat-card p{font-size:11px;color:var(--muted);margin:6px 0 0}.stats-columns{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(280px,1fr);gap:14px;margin-top:15px}.panel h2{font:700 18px Manrope;margin:0 0 5px}.panel-sub{color:var(--muted);font-size:11px;margin:0 0 20px}.chart{height:220px;display:flex;align-items:flex-end;gap:7px;padding:12px 0 0;border-bottom:1px solid var(--line)}.bar-wrap{flex:1;min-width:0;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:7px}.bar-value{font-size:9px;color:var(--muted);font-weight:700}.bar{width:min(100%,28px);min-height:3px;background:linear-gradient(180deg,#a78bfa,#7252c7);border-radius:6px 6px 2px 2px}.bar-label{font-size:9px;color:var(--muted);white-space:nowrap}.ranking{display:grid;gap:12px}.rank-item{display:grid;grid-template-columns:25px minmax(0,1fr) auto;gap:9px;align-items:center}.rank-num{width:24px;height:24px;border-radius:8px;background:#f0edfa;color:#7252c7;display:grid;place-items:center;font-size:11px;font-weight:800}.rank-name{font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.rank-meta{font-size:10px;color:var(--muted);margin-top:4px}.rank-count{text-align:right;font-size:12px;font-weight:800}.rank-count small{display:block;font-size:9px;color:var(--muted);font-weight:500;margin-top:3px}.stats-note{margin:16px 0 0;padding:13px 15px;border-radius:11px;background:#eeedf4;color:#66647b;font-size:11px;line-height:1.6}.state-message{padding:25px 12px;text-align:center;color:var(--muted);font-size:12px}.stats-top{display:flex;align-items:center;justify-content:space-between;gap:12px}.refresh{border:1px solid var(--line);background:#fff;border-radius:8px;padding:7px 10px;font-size:11px;color:var(--text)}@media(max-width:800px){.stats-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.stats-columns{grid-template-columns:1fr}.stats-head{align-items:flex-start;flex-direction:column}.period-switch{align-self:stretch}.period-switch button{flex:1}}@media(max-width:740px){.stats-main{padding:0 14px 30px}.stats-head{margin:18px 0}.stat-card,.panel{padding:15px}.chart{gap:3px}.bar-label{font-size:8px}.bar-value{font-size:8px}}
+</style>
+</head>
+<body>
+<aside class="sidebar">
+<a class="brand" href="index.html"><span class="logo">◖))</span><span><strong>conexão<span>fm</span></strong><small>A música que conecta você</small></span></a>
+<nav class="nav"><a href="index.html"><span>⌂</span>Início</a><a href="radios.html"><span>⌕</span>Explorar rádios</a><a href="favoritos.html"><span>♡</span>Meus favoritos</a><a class="active" href="audiencia.html"><span>▥</span>Audiência</a></nav>
+<div class="side-bottom"><span class="dot"></span><strong style="color:#eee">Conexão FM</strong><br>A música que conecta você.</div>
+</aside>
+<main class="main stats-main">
+<header class="top"><a class="mobile-brand" href="index.html"><span>◖))</span> conexão<span>fm</span></a><a class="plain" href="index.html">← Voltar para o início</a></header>
+<nav class="mobile-nav" aria-label="Navegação principal"><a href="index.html"><span>⌂</span> Início</a><a href="radios.html"><span>⌕</span> Explorar</a><a href="favoritos.html"><span>♡</span> Favoritos</a></nav>
+<section class="stats-head"><div><div class="eyebrow muted">CONEXÃO FM · NÚMEROS</div><h1>Painel de audiência</h1><p>Veja como as rádios estão sendo ouvidas.</p></div><div class="period-switch" role="group" aria-label="Período"><button type="button" data-period="7d" aria-pressed="true">7 dias</button><button type="button" data-period="30d" aria-pressed="false">30 dias</button></div></section>
+<section class="stats-grid" aria-live="polite">
+<article class="stat-card"><small>Reproduções iniciadas</small><strong id="plays">—</strong><p>Total de comandos de play</p></article>
+<article class="stat-card"><small>Sessões de reprodução</small><strong id="sessions">—</strong><p>Estimativa por identificador temporário</p></article>
+<article class="stat-card"><small>Paradas registradas</small><strong id="stops">—</strong><p>Eventos de stop recebidos</p></article>
+<article class="stat-card"><small>Batimentos recebidos</small><strong id="heartbeats">—</strong><p>Sinais periódicos durante a reprodução</p></article>
+</section>
+<section class="stats-columns">
+<article class="panel"><div class="stats-top"><h2>Reproduções por dia</h2><button class="refresh" id="refresh" type="button">Atualizar</button></div><p class="panel-sub">Quantidade de inícios de reprodução em cada data.</p><div id="chart" class="chart" role="img" aria-label="Gráfico de reproduções por dia"><div class="state-message">Carregando dados…</div></div></article>
+<article class="panel"><h2>Rádios mais ouvidas</h2><p class="panel-sub">Classificação por reproduções iniciadas.</p><div id="ranking" class="ranking"><div class="state-message">Carregando dados…</div></div></article>
+</section>
+<p class="stats-note">Os números são agregados e consideram apenas rádios cadastradas na Conexão FM. “Sessões” não significa pessoas únicas: uma pessoa pode gerar mais de uma sessão ou compartilhar um dispositivo. O painel é público e não exibe identificadores individuais.</p>
+<footer class="footer"><span>Conexão FM — A música que conecta você.</span><span><a href="sobre.html">Sobre</a> · <a href="privacidade.html">Privacidade</a></span></footer>
+</main>
+<script>
+(function(){
+ const API='https://radio-conexao-api.bieljuniho.workers.dev';
+ const $=id=>document.getElementById(id);
+ const number=value=>new Intl.NumberFormat('pt-BR').format(Number(value||0));
+ let period='7d';
+ function message(container,text){container.replaceChildren();const el=document.createElement('div');el.className='state-message';el.textContent=text;container.append(el)}
+ function renderChart(rows){
+  const chart=$('chart');chart.replaceChildren();
+  const days=period==='7d'?7:30;
+  const byDay=new Map(rows.map(row=>[row.day,Number(row.plays||0)]));
+  const today=new Date();today.setHours(0,0,0,0);
+  const values=[];
+  for(let i=days-1;i>=0;i--){const date=new Date(today);date.setDate(today.getDate()-i);const key=date.getFullYear()+'-'+String(date.getMonth()+1).padStart(2,'0')+'-'+String(date.getDate()).padStart(2,'0');values.push({key,value:byDay.get(key)||0,date})}
+  const max=Math.max(1,...values.map(x=>x.value));
+  values.forEach(item=>{
+   const wrap=document.createElement('div');wrap.className='bar-wrap';
+   const val=document.createElement('span');val.className='bar-value';val.textContent=item.value?number(item.value):'';
+   const bar=document.createElement('div');bar.className='bar';bar.style.height=Math.max(2,item.value/max*145)+'px';bar.title=item.key+': '+number(item.value)+' reproduções';
+   const label=document.createElement('span');label.className='bar-label';label.textContent=period==='7d'?String(item.date.getDate()).padStart(2,'0')+'/'+String(item.date.getMonth()+1).padStart(2,'0'):String(item.date.getDate());
+   wrap.append(val,bar,label);chart.append(wrap);
+  });
+ }
+ function renderRanking(rows){
+  const list=$('ranking');list.replaceChildren();
+  if(!rows.length){message(list,'Ainda não há reproduções registradas neste período.');return}
+  rows.forEach((station,index)=>{
+   const item=document.createElement('div');item.className='rank-item';
+   const rank=document.createElement('span');rank.className='rank-num';rank.textContent=String(index+1);
+   const info=document.createElement('div');
+   const name=document.createElement('div');name.className='rank-name';name.textContent=station.name;
+   const meta=document.createElement('div');meta.className='rank-meta';meta.textContent=number(station.sessions)+' sessões estimadas';
+   const count=document.createElement('div');count.className='rank-count';count.textContent=number(station.plays);const small=document.createElement('small');small.textContent='reproduções';count.append(small);
+   info.append(name,meta);item.append(rank,info,count);list.append(item);
+  });
+ }
+ async function load(){
+  $('refresh').disabled=true;$('refresh').textContent='Atualizando…';
+  try{
+   const response=await fetch(API+'/api/stats?period='+period,{cache:'no-store'});
+   if(!response.ok)throw new Error('HTTP '+response.status);
+   const data=await response.json();
+   $('plays').textContent=number(data.summary.plays);
+   $('sessions').textContent=number(data.summary.sessions);
+   $('stops').textContent=number(data.summary.stops);
+   $('heartbeats').textContent=number(data.summary.heartbeats);
+   renderChart(data.daily||[]);renderRanking(data.top_stations||[]);
+  }catch(error){
+   ['plays','sessions','stops','heartbeats'].forEach(id=>$(id).textContent='—');
+   message($('chart'),'Não foi possível carregar os dados. Tente novamente.');
+   message($('ranking'),'Não foi possível carregar o ranking.');
+  }finally{$('refresh').disabled=false;$('refresh').textContent='Atualizar'}
+ }
+ document.querySelectorAll('[data-period]').forEach(button=>button.addEventListener('click',()=>{
+  period=button.dataset.period;
+  document.querySelectorAll('[data-period]').forEach(item=>item.setAttribute('aria-pressed',String(item===button)));
+  load();
+ }));
+ $('refresh').addEventListener('click',load);
+ load();
+})();
+</script>
+</body></html>
