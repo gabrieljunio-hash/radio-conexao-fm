@@ -1,0 +1,56 @@
+name: Preview browser tests
+
+on:
+  push:
+    branches:
+      - feature/platform-expansion-2026-10-29
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Wait for Cloudflare Pages Preview
+        run: |
+          for i in $(seq 1 30); do
+            if curl -fsS https://feature-platform-expansion-2.radio-conexao-fm.pages.dev/ >/dev/null; then
+              echo "Preview is responding"
+              exit 0
+            fi
+            echo "Waiting for Preview ($i/30)"
+            sleep 20
+          done
+          echo "Preview did not become available"
+          exit 1
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install dependencies
+        run: npm install --no-save @playwright/test
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Run tests against real Preview
+        env:
+          CI: true
+          PREVIEW_BASE_URL: https://feature-platform-expansion-2.radio-conexao-fm.pages.dev
+        run: npx playwright test tests/preview.spec.js
+      - name: Upload Preview test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: preview-playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
