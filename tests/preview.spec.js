@@ -56,3 +56,25 @@ test("Preview responde corretamente em viewport mobile", async ({ page }) => {
   expect(dimensions.document, "Documento ultrapassa a largura do viewport: " + JSON.stringify(dimensions)).toBeLessThanOrEqual(dimensions.viewport + 1);
   expect(dimensions.body, "Conteúdo do body ultrapassa a largura do viewport: " + JSON.stringify(dimensions)).toBeLessThanOrEqual(dimensions.viewport + 1);
 });
+
+test("Player envia eventos de audiência apenas para rádios do catálogo próprio", async ({ page }) => {
+  let payload = null;
+  await page.addInitScript(() => {
+    HTMLMediaElement.prototype.play = function () {
+      this.dispatchEvent(new Event("playing"));
+      return Promise.resolve();
+    };
+  });
+  await page.route(API + "/api/events", async route => {
+    payload = route.request().postDataJSON();
+    await route.fulfill({ status: 201, contentType: "application/json", body: JSON.stringify({ ok: true, recorded: true }) });
+  });
+  await page.goto("/?view=explorar");
+  const playButton = page.locator('#stations [data-play^="db-"]').first();
+  await expect(playButton).toBeVisible({ timeout: 20000 });
+  await playButton.click();
+  await expect.poll(() => payload).not.toBeNull();
+  expect(payload.event_type).toBe("play");
+  expect(payload.station_slug).toMatch(/^[a-z0-9-]+$/);
+  expect(payload.session_id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
+});
