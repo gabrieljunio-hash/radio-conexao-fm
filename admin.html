@@ -152,11 +152,12 @@
     updateSelected();
     root.querySelectorAll("input[type=checkbox]").forEach(el=>el.addEventListener("change",updateSelected));
   }
-  function updateSelected(){const count=$("candidates").querySelectorAll("input:checked").length;$("selected-count").textContent=count+" selecionadas";$("import-selected").disabled=!count;}
+  function updateSelected(){const count=$("candidates").querySelectorAll("input:checked").length;$("selected-count").textContent=count+" selecionadas (até 100 por envio)";$("import-selected").disabled=!count;}
   $("import-selected").addEventListener("click",async()=>{
-    const selected=[...$("candidates").querySelectorAll("input:checked")].map(el=>candidates[Number(el.dataset.index)]);
+    const selectedAll=[...$("candidates").querySelectorAll("input:checked")].map(el=>candidates[Number(el.dataset.index)]);
+    const selected=selectedAll.slice(0,100);
     $("import-selected").disabled=true;$("import-selected").textContent="Importando...";
-    try{const result=await api("/api/admin/import/radio-browser",{method:"POST",body:JSON.stringify({stations:selected})});show("discover-message",result.imported+" rádios importadas; "+result.duplicates+" duplicadas ignoradas; "+result.category_links+" categorias vinculadas.","ok");await connect();}
+    try{const result=await api("/api/admin/import/radio-browser",{method:"POST",body:JSON.stringify({stations:selected})});const processed=new Set(selected.map(item=>item.stationuuid));candidates=candidates.filter(item=>!processed.has(item.stationuuid));renderCandidates();show("discover-message",result.imported+" rádios importadas; "+result.duplicates+" duplicadas ignoradas; "+result.category_links+" categorias vinculadas. "+candidates.length+" ainda na lista.","ok");await connect();}
     catch(err){show("discover-message",err.message,"error");}
     finally{$("import-selected").textContent="Importar selecionadas";updateSelected();}
   });
