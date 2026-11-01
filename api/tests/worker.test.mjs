@@ -1,0 +1,105 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import worker from "../src/index.js";
+
+const ORIGIN = "https://feature-platform-expansion-2.radio-conexao-fm.pages.dev";
+const SESSION = "123e4567-e89b-42d3-a456-426614174000";
+
+function mockDb({ recentHeartbeat = null } = {}) {
+  const calls = [];
+  return {
+    calls,
+    prepare(sql) {
+      const statement = {
+        sql,
+        values: [],
+        bind(...values) { this.values = values; return this; },
+        async first() {
+          calls.push({ type: "first", sql, values: this.values });
+          if (sql.includes("SELECT id FROM stations")) return { id: 24 };
+          if (sql.includes("SELECT id FROM play_events")) return recentHeartbeat;
+          if (sql.includes("SELECT 1 AS db_ok")) return { db_ok: 1 };
+          return null;
+        },
+        async run() {
+          calls.push({ type: "run", sql, values: this.values });
+          return { success: true };
+        },
+        async all() { return { results: [] }; }
+      };
+      return statement;
+    }
+  };
+}
+
+async function postEvent(DB, payload) {
+  return worker.fetch(new Request("https://api.example.com/api/events", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Origin: ORIGIN },
+    body: JSON.stringify(payload)
+  }), { DB });
+}
+
+test("POST /api/events rejects invalid event types without writing", async () => {
+  const DB = mockDb();
+  const response = await postEvent(DB, {
+    event_type: "impression",
+    station_slug: "radio-teste",
+    session_id: SESSION
+  });
+  assert.equal(response.status, 400);
+  assert.equal((await response.json()).error, "invalid_event_type");
+  assert.equal(DB.calls.length, 0);
+});
+
+test("POST /api/events records a valid catalog play without personal data", async () => {
+  const DB = mockDb();
+  const response = await postEvent(DB, {
+    event_type: "play",
+    station_slug: "radio-teste",
+    session_id: SESSION
+  });
+  assert.equal(response.status, 201);
+  assert.equal(response.headers.get("Access-Control-Allow-Origin"), ORIGIN);
+  assert.deepEqual(await response.json(), { ok: true, recorded: true });
+  const insert = DB.calls.find(call => call.type === "run");
+  assert.match(insert.sql, /INSERT INTO play_events/);
+  assert.deepEqual(insert.values, [24, "play", SESSION]);
+  assert.equal(insert.values.length, 3);
+});
+
+test("POST /api/events rejects unknown stations", async () => {
+  const DB = mockDb();
+  DB.prepare = sql => ({
+    bind() { return this; },
+    async first() { return null; }
+  });
+  const response = await postEvent(DB, {
+    event_type: "play",
+    station_slug: "nao-existe",
+    session_id: SESSION
+  });
+  assert.equal(response.status, 404);
+  assert.equal((await response.json()).error, "station_not_found");
+});
+
+test("POST /api/events deduplicates repeated heartbeats", async () => {
+  const DB = mockDb({ recentHeartbeat: { id: 99 } });
+  const response = await postEvent(DB, {
+    event_type: "heartbeat",
+    station_slug: "radio-teste",
+    session_id: SESSION
+  });
+  assert.equal(response.status, 202);
+  assert.deepEqual(await response.json(), { ok: true, recorded: false });
+  assert.equal(DB.calls.some(call => call.type === "run"), false);
+});
+
+test("API health route remains available", async () => {
+  const response = await worker.fetch(
+    new Request("https://api.example.com/api/health"),
+    { DB: mockDb() }
+  );
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), { status: "online", database: "connected" });
+});
