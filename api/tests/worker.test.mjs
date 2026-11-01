@@ -159,3 +159,50 @@ test("GET /api/stats defaults to 7 days and never returns session identifiers", 
   assert.equal(data.period, "7d");
   assert.equal(JSON.stringify(data).includes(SESSION), false);
 });
+
+
+test("admin API rejects requests without a valid bearer token", async () => {
+  const DB = mockDb();
+  const response = await worker.fetch(
+    new Request("https://api.example.com/api/admin/summary"),
+    { DB, ADMIN_TOKEN: "long-test-secret" }
+  );
+  assert.equal(response.status, 401);
+  assert.deepEqual(await response.json(), { error: "unauthorized" });
+  assert.equal(DB.calls.length, 0);
+});
+
+test("admin API reports missing secret instead of exposing management routes", async () => {
+  const response = await worker.fetch(
+    new Request("https://api.example.com/api/admin/summary"),
+    { DB: mockDb() }
+  );
+  assert.equal(response.status, 503);
+  assert.equal((await response.json()).error, "admin_not_configured");
+});
+
+test("admin API summary requires the bearer token and disables caching", async () => {
+  const DB = mockDb();
+  const response = await worker.fetch(
+    new Request("https://api.example.com/api/admin/summary", {
+      headers: { Authorization: "Bearer long-test-secret", Origin: ORIGIN }
+    }),
+    { DB, ADMIN_TOKEN: "long-test-secret" }
+  );
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get("Cache-Control"), "no-store");
+  assert.equal(response.headers.get("Access-Control-Allow-Origin"), ORIGIN);
+  assert.ok(DB.calls.length >= 4);
+});
+
+test("admin preflight allows Authorization header", async () => {
+  const response = await worker.fetch(
+    new Request("https://api.example.com/api/admin/summary", {
+      method: "OPTIONS",
+      headers: { Origin: ORIGIN, "Access-Control-Request-Headers": "authorization,content-type" }
+    }),
+    { DB: mockDb() }
+  );
+  assert.equal(response.status, 204);
+  assert.match(response.headers.get("Access-Control-Allow-Headers"), /Authorization/i);
+});
