@@ -51,7 +51,7 @@
           <div><label for="country">País (código)</label><input id="country" value="BR" maxlength="2"></div>
           <div><label for="tag">Estilo / categoria</label><input id="tag" placeholder="sertanejo, gospel, rock..."></div>
           <div><label for="search-name">Nome (opcional)</label><input id="search-name" placeholder="Nome da rádio"></div>
-          <div class="fit" style="align-self:end"><button type="submit">Buscar rádios</button></div>
+          <div class="fit" style="align-self:end"><button type="submit">Buscar rádios</button></div><div class="fit" style="align-self:end"><button id="next-page" type="button" class="secondary" disabled>Próximas 100</button></div>
         </div>
       </form>
       <div id="discover-message" class="status hidden"></div>
@@ -85,6 +85,7 @@
   const $ = (id) => document.getElementById(id);
   let token = sessionStorage.getItem("radioAdminToken") || "";
   let candidates = [];
+  let discoverOffset = 0;
   let testedManual = false;
   const show = (id, message, type = "") => {
     const el = $(id); el.textContent = message; el.className = "status" + (type ? " " + type : "");
@@ -117,15 +118,22 @@
     catch (err) { token = ""; show("login-message", err.message, "error"); }
   });
   $("logout").addEventListener("click", () => { token = ""; sessionStorage.removeItem("radioAdminToken"); setConnected(false); });
-  $("discover-form").addEventListener("submit", async e => {
-    e.preventDefault(); candidates = []; $("candidates").replaceChildren(); hide("discover-message");
-    const params = new URLSearchParams({country:$("country").value.trim() || "BR", tag:$("tag").value.trim(), name:$("search-name").value.trim(), limit:"50"});
+  async function discover(reset = false) {
+    if (reset) { candidates = []; discoverOffset = 0; $("candidates").replaceChildren(); }
+    hide("discover-message");
+    const params = new URLSearchParams({country:$("country").value.trim() || "BR", tag:$("tag").value.trim(), name:$("search-name").value.trim(), limit:"100", offset:String(discoverOffset)});
     try {
       const data = await api("/api/admin/discover?" + params);
-      candidates = data.stations || []; renderCandidates();
-      show("discover-message", candidates.length + " rádios encontradas e marcadas como disponíveis no Radio Browser.", "ok");
+      const known = new Set(candidates.map(item => item.stationuuid));
+      const fresh = (data.stations || []).filter(item => !known.has(item.stationuuid));
+      candidates = candidates.concat(fresh); renderCandidates();
+      discoverOffset += 100;
+      $("next-page").disabled = fresh.length === 0;
+      show("discover-message", fresh.length + " novas rádios encontradas neste lote; " + candidates.length + " no total.", "ok");
     } catch (err) { show("discover-message", err.message, "error"); }
-  });
+  }
+  $("discover-form").addEventListener("submit", async e => { e.preventDefault(); await discover(true); });
+  $("next-page").addEventListener("click", async () => { $("next-page").disabled = true; await discover(false); });
   function renderCandidates() {
     const root = $("candidates"); root.replaceChildren();
     for (let i=0;i<candidates.length;i++) {
