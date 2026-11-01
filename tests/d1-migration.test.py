@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate every manual D1 import batch twice against an isolated SQLite fixture."""
+"""Validate all ten corrected D1 import batches twice against an isolated SQLite fixture."""
 from pathlib import Path
 import sqlite3
 
