@@ -53,7 +53,10 @@ db.executemany(
 
 def run_batches():
     for batch in BATCHES:
-        db.executescript(batch.read_text(encoding="utf-8"))
+        try:
+            db.executescript(batch.read_text(encoding="utf-8"))
+        except sqlite3.Error as exc:
+            raise RuntimeError(f"Failed SQL batch {batch.name}: {exc}") from exc
 
 def counts():
     return (
