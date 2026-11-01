@@ -81,3 +81,10 @@ test("área de patrocinadores exibe somente parceiros ativos com destino HTTPS",
   await expect(page.locator("#sponsorCards a")).toHaveAttribute("rel", "sponsored noopener noreferrer");
   await expect(page.locator("#sponsorCards a")).toHaveAttribute("href", "https://example.com/");
 });
+
+
+test("página comercial apresenta contato de WhatsApp correto", async ({ page }) => {
+  await page.goto("/anuncie.html");
+  await expect(page.getByRole("heading", { name: "Conecte sua marca a novos ouvintes." })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Conversar pelo WhatsApp/ })).toHaveAttribute("href", "https://wa.me/551996547439?text=Ol%C3%A1%21%20Tenho%20interesse%20em%20anunciar%20na%20Conex%C3%A3o%20FM.");
+});
