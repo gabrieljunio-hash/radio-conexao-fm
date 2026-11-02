@@ -133,3 +133,35 @@ test("painel administrativo carrega bloqueado e não é indexável", async ({ pa
   await expect(page.getByLabel("Token de acesso")).toHaveAttribute("type", "password");
   await expect(page.locator("#dashboard")).toBeHidden();
 });
+
+
+test("início mostra somente histórico real e ranking por reproduções", async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem("conexao-fm-recent", JSON.stringify(["db-radio-a"]));
+  });
+  await page.route("https://radio-conexao-api.bieljuniho.workers.dev/api/stations**", route =>
+    route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({
+      stations: [
+        { slug: "radio-a", name: "Rádio A", stream_url: "https://stream.example.test/a", city: "São Paulo", categories: ["pop"] },
+        { slug: "radio-b", name: "Rádio B", stream_url: "https://stream.example.test/b", city: "Campinas", categories: ["rock"] }
+      ],
+      pagination: { total: 2, limit: 100, offset: 0, has_more: false }
+    }) })
+  );
+  await page.route("https://radio-conexao-api.bieljuniho.workers.dev/api/stats**", route =>
+    route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({
+      top_stations: [
+        { slug: "radio-b", name: "Rádio B", plays: 12, sessions: 8 },
+        { slug: "radio-a", name: "Rádio A", plays: 7, sessions: 5 }
+      ]
+    }) })
+  );
+  await page.goto("/");
+  await expect(page.locator("#recentSection")).toBeVisible();
+  await expect(page.locator("#recentStations .recent-station")).toHaveCount(1);
+  await expect(page.locator("#recentStations")).toContainText("Rádio A");
+  await expect(page.locator("#recentStations")).not.toContainText("Rádio B");
+  await expect(page.locator("#popularSection")).toBeVisible();
+  await expect(page.locator("#popularStations .popular-station")).toHaveCount(2);
+  await expect(page.locator("#popularStations .popular-info").first()).toContainText("Rádio B");
+});
