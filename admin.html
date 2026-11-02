@@ -157,9 +157,17 @@
   $("import-selected").addEventListener("click",async()=>{
     const selectedAll=[...$("candidates").querySelectorAll("input:checked")].map(el=>candidates[Number(el.dataset.index)]);
     const selected=selectedAll.slice(0,100);
+    if(!selected.length){show("discover-message","Selecione pelo menos uma rádio para importar.","error");return;}
     $("import-selected").disabled=true;$("import-selected").textContent="Importando...";
-    try{const result=await api("/api/admin/import/radio-browser",{method:"POST",body:JSON.stringify({stations:selected})});const processed=new Set(selected.map(item=>item.stationuuid));candidates=candidates.filter(item=>!processed.has(item.stationuuid));renderCandidates();show("discover-message",result.imported+" rádios importadas; "+result.duplicates+" duplicadas ignoradas; "+result.category_links+" categorias vinculadas. "+candidates.length+" ainda na lista.","ok");await connect();}
-    catch(err){show("discover-message",err.message,"error");}
+    show("discover-message","Enviando "+selected.length+" rádios para o banco D1...","");
+    try{
+      const result=await api("/api/admin/import/radio-browser",{method:"POST",body:JSON.stringify({stations:selected})});
+      const processed=new Set(selected.map(item=>item.stationuuid));
+      candidates=candidates.filter(item=>!processed.has(item.stationuuid));
+      renderCandidates();
+      show("discover-message",result.imported+" rádios importadas; "+result.duplicates+" duplicadas ignoradas; "+result.category_links+" categorias vinculadas. "+candidates.length+" ainda na lista.", "ok");
+      await connect();
+    }catch(err){show("discover-message","Falha na importação: "+err.message,"error");}
     finally{$("import-selected").textContent="Importar selecionadas";updateSelected();}
   });
   $("test-manual").addEventListener("click",async()=>{

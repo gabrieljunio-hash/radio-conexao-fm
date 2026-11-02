@@ -283,12 +283,23 @@ async function handleAdmin(request, env, url, origin) {
     const slugSet = new Set((existingSlugs.results || []).map(item => item.slug));
     const fresh = clean.filter(item => !existingUrls.has(item.stream_url.toLowerCase()) && !slugSet.has(item.slug));
     if (!fresh.length) return adminJson({ ok: true, imported: 0, duplicates: clean.length, message: "Todas as rádios já estavam cadastradas." }, 200, origin);
-    const values = fresh.map(() => "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 0)").join(",");
-    const bindings = fresh.flatMap(item => [item.slug, item.name, item.stream_url, item.website_url, item.logo_url, item.country_code, item.state, item.city, item.language, item.tags.join(", ")]);
-    await env.DB.prepare("INSERT OR IGNORE INTO stations (slug, name, stream_url, website_url, logo_url, country_code, state, city, language, description, is_active, is_verified) VALUES " + values).bind(...bindings).run();
+    // D1 allows at most 100 bound parameters per SQL statement.
+    // Each station uses 10 values, so insert at most 10 stations per statement.
+    for (let offset = 0; offset < fresh.length; offset += 10) {
+      const chunk = fresh.slice(offset, offset + 10);
+      const values = chunk.map(() => "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 0)").join(",");
+      const bindings = chunk.flatMap(item => [item.slug, item.name, item.stream_url, item.website_url, item.logo_url, item.country_code, item.state, item.city, item.language, item.tags.join(", ")]);
+      await env.DB.prepare("INSERT OR IGNORE INTO stations (slug, name, stream_url, website_url, logo_url, country_code, state, city, language, description, is_active, is_verified) VALUES " + values).bind(...bindings).run();
+    }
     const slugs = fresh.map(item => item.slug);
-    const slugPlaceholders = slugs.map(() => "?").join(",");
-    const inserted = await env.DB.prepare("SELECT id, slug FROM stations WHERE slug IN (" + slugPlaceholders + ")").bind(...slugs).all();
+    const insertedRows = [];
+    for (let offset = 0; offset < slugs.length; offset += 100) {
+      const chunk = slugs.slice(offset, offset + 100);
+      const slugPlaceholders = chunk.map(() => "?").join(",");
+      const result = await env.DB.prepare("SELECT id, slug FROM stations WHERE slug IN (" + slugPlaceholders + ")").bind(...chunk).all();
+      insertedRows.push(...(result.results || []));
+    }
+    const inserted = { results: insertedRows };
     const categoryRows = await env.DB.prepare("SELECT id, slug FROM categories").all();
     const categoryIds = new Map((categoryRows.results || []).map(item => [item.slug, item.id]));
     const links = [];
@@ -337,7 +348,8 @@ export default {
       try {
         return await handleAdmin(request, env, url, origin);
       } catch (error) {
-        return adminJson({ error: "admin_operation_failed", message: "Falha ao executar a operação administrativa." }, 500, origin);
+        const detail = error instanceof Error ? error.message : String(error);
+        return adminJson({ error: "admin_operation_failed", message: detail.slice(0, 500) }, 500, origin);
       }
     }
 
