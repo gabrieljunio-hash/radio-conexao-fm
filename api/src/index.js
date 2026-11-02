@@ -172,8 +172,9 @@ async function handleAdmin(request, env, url, origin) {
     });
     if (!response.ok) return adminJson({ error: "directory_unavailable", status: response.status }, 502, origin);
     const data = await response.json();
-    const stations = (Array.isArray(data) ? data : []).filter(item =>
-      item && item.lastcheckok === 1 && item.stationuuid && item.name && safePublicUrl(item.url_resolved || item.url)
+    const directoryItems = Array.isArray(data) ? data : [];
+    const normalized = directoryItems.filter(item =>
+      item && Number(item.lastcheckok) === 1 && item.stationuuid && item.name && safePublicUrl(item.url_resolved || item.url)
     ).map(item => ({
       stationuuid: String(item.stationuuid),
       name: String(item.name).trim().slice(0, 120),
@@ -189,7 +190,32 @@ async function handleAdmin(request, env, url, origin) {
       codec: String(item.codec || "").slice(0, 20),
       directory_checked: true
     }));
-    return adminJson({ stations, count: stations.length, source: "Radio Browser" }, 200, origin);
+    const urls = [...new Set(normalized.map(item => item.stream_url.toLowerCase()))];
+    const slugs = [...new Set(normalized.map(item => "rb-" + item.stationuuid.toLowerCase().replace(/[^a-f0-9-]/g, "").slice(0, 40)))];
+    const existingUrls = new Set();
+    const existingSlugs = new Set();
+    if (urls.length) {
+      const placeholders = urls.map(() => "?").join(",");
+      const result = await env.DB.prepare(`SELECT lower(stream_url) AS stream_url FROM stations WHERE lower(stream_url) IN (${placeholders})`).bind(...urls).all();
+      for (const row of result.results || []) existingUrls.add(String(row.stream_url).toLowerCase());
+    }
+    if (slugs.length) {
+      const placeholders = slugs.map(() => "?").join(",");
+      const result = await env.DB.prepare(`SELECT slug FROM stations WHERE slug IN (${placeholders})`).bind(...slugs).all();
+      for (const row of result.results || []) existingSlugs.add(String(row.slug));
+    }
+    const stations = normalized.filter(item => {
+      const slug = "rb-" + item.stationuuid.toLowerCase().replace(/[^a-f0-9-]/g, "").slice(0, 40);
+      return !existingUrls.has(item.stream_url.toLowerCase()) && !existingSlugs.has(slug);
+    });
+    return adminJson({
+      stations,
+      count: stations.length,
+      duplicates: normalized.length - stations.length,
+      checked: normalized.length,
+      has_more: directoryItems.length >= limit,
+      source: "Radio Browser"
+    }, 200, origin);
   }
 
   if (request.method === "POST" && url.pathname === "/api/admin/test-stream") {
