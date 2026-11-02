@@ -144,8 +144,10 @@
         ? checked + " rádios analisadas em " + pages + " lotes; " + duplicates + " duplicadas/indisponíveis ignoradas; " + fresh.length + " novas encontradas. " + candidates.length + " novas no total."
         : checked + " rádios analisadas em " + pages + " lotes; " + duplicates + " duplicadas/indisponíveis ignoradas; nenhuma nova neste trecho.";
       show("discover-message", summary + (data.has_more ? " Você pode continuar a busca." : " Fim dos resultados disponíveis para este filtro."), "ok");
-    } catch (err) { show("discover-message", err.message, "error"); }
-    finally { $("next-page").disabled = discoverOffset > 5000; }
+    } catch (err) {
+      show("discover-message", err.message, "error");
+      $("next-page").disabled = discoverOffset > 5000;
+    }
   }
   $("discover-form").addEventListener("submit", async e => { e.preventDefault(); await discover(true); });
   $("next-page").addEventListener("click", async () => { $("next-page").disabled = true; await discover(false); });
