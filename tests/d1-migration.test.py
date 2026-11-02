@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
-"""Execute the complete D1 import migration twice against an isolated SQLite fixture."""
+"""Validate all ten corrected D1 import batches twice against an isolated SQLite fixture."""
 from pathlib import Path
 import sqlite3
 
 ROOT = Path(__file__).resolve().parents[1]
-MIGRATION = ROOT / "api/migrations/0003_import_validated_stations.sql"
+BATCH_DIR = ROOT / "api/import-batches"
+BATCHES = sorted(BATCH_DIR.glob("*.sql"))
+assert len(BATCHES) == 10, f"Expected 10 SQL batches, found {len(BATCHES)}"
 
 db = sqlite3.connect(":memory:")
 db.execute("PRAGMA foreign_keys = ON")
@@ -49,8 +51,12 @@ db.executemany(
     [(f"seed-{i:02d}", f"Seed station {i}", f"https://example.com/{i}") for i in range(1, 25)],
 )
 
-sql = MIGRATION.read_text(encoding="utf-8")
-db.executescript(sql)
+def run_batches():
+    for batch in BATCHES:
+        try:
+            db.executescript(batch.read_text(encoding="utf-8"))
+        except sqlite3.Error as exc:
+            raise RuntimeError(f"Failed SQL batch {batch.name}: {exc}") from exc
 
 def counts():
     return (
@@ -60,15 +66,15 @@ def counts():
         db.execute("SELECT COUNT(*) FROM station_categories").fetchone()[0],
     )
 
+run_batches()
 first = counts()
 assert first == (165, 141, 17, 140), f"Unexpected first-run totals: {first}"
 
-# Idempotency: running the same migration again must not duplicate any rows.
-db.executescript(sql)
+# Re-running every batch must not duplicate stations, categories or links.
+run_batches()
 second = counts()
-assert second == first, f"Migration is not idempotent: first={first}, second={second}"
+assert second == first, f"Import batches are not idempotent: first={first}, second={second}"
 
-# Every association must resolve to an imported station and an existing category.
 orphans = db.execute("""
 SELECT COUNT(*) FROM station_categories sc
 LEFT JOIN stations s ON s.id = sc.station_id
@@ -77,7 +83,7 @@ WHERE s.id IS NULL OR c.id IS NULL
 """).fetchone()[0]
 assert orphans == 0, f"Found {orphans} orphan category associations"
 
-print("PASS: full migration executed twice")
+print("PASS: all 10 D1 batches executed twice")
 print(f"Stations: {first[0]} total ({first[1]} imported)")
 print(f"Categories: {first[2]} total")
 print(f"Station/category links: {first[3]}")

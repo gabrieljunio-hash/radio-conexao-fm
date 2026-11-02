@@ -41,3 +41,8 @@ https://SEU-WORKER.workers.dev/api/stations?limit=20
 - A API de estatísticas limita a consulta aos últimos 7 ou 30 dias.
 - O painel pode mostrar zeros até que existam reproduções registradas.
 - CORS permite o domínio Pages atual e o domínio GitHub Pages antigo.
+
+
+## Painel administrativo
+
+O painel de cadastro/importação está em `/admin.html`. Ele exige o secret `ADMIN_TOKEN` configurado no Worker; sem esse secret as rotas administrativas permanecem bloqueadas. Consulte [ADMIN_SETUP.md](./ADMIN_SETUP.md) para publicar a API e configurar o secret. Nunca grave o token no HTML, no Git ou no D1.

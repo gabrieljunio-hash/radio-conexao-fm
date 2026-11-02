@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="theme-color" content="#101827">
+  <title>Administração | Rádio Conexão FM</title>
+  <style>
+    :root{color-scheme:dark;--bg:#0b1220;--panel:#131e30;--line:#29384e;--muted:#9aabc2;--text:#f4f7fb;--accent:#f3b638;--green:#45c58a;--red:#ff7373}
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}
+    main{width:min(100% - 28px,1050px);margin:24px auto 60px}header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:20px}
+    h1{font-size:22px;margin:0}h2{font-size:17px;margin:0 0 12px}.muted,.hint{color:var(--muted);font-size:13px}
+    .panel{background:var(--panel);border:1px solid var(--line);border-radius:15px;padding:17px;margin:14px 0}
+    .grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.stat{padding:13px;border:1px solid var(--line);border-radius:11px}.stat strong{display:block;font-size:25px}
+    .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.row>*{flex:1}.row .fit{flex:0 0 auto}
+    input,select,textarea,button{font:inherit;border-radius:9px}input,select,textarea{width:100%;padding:11px 12px;color:var(--text);background:#0b1423;border:1px solid #35465f;margin:4px 0 10px}
+    label{display:block;font-size:13px;color:#c4d0df}button{border:0;padding:10px 14px;background:var(--accent);color:#17130a;font-weight:700;cursor:pointer}
+    button.secondary{background:#26364d;color:var(--text)}button.danger{background:#532b34;color:#ffd9dd}button:disabled{opacity:.45;cursor:not-allowed}
+    .hidden{display:none!important}.status{padding:10px 12px;border-radius:9px;background:#1c2b40;margin:10px 0;font-size:13px;white-space:pre-wrap}
+    .status.error{background:#48252e;color:#ffdadd}.status.ok{background:#153c31;color:#c9ffdf}
+    .station{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line)}
+    .station:last-child{border:0}.station input[type=checkbox]{width:19px;height:19px;margin:0}.station strong{display:block}.station small{display:block;color:var(--muted);overflow-wrap:anywhere}
+    .station-actions{display:flex;gap:6px;flex-wrap:wrap}.station-actions button{font-size:12px;padding:7px 9px}
+    .badge{font-size:11px;color:#b9f4d2;background:#174332;border-radius:30px;padding:3px 8px;display:inline-block;margin-top:4px}
+    #login{max-width:460px;margin:10vh auto}.footer{margin-top:24px;color:var(--muted);font-size:12px}
+    @media(max-width:650px){main{width:min(100% - 20px,1050px);margin-top:14px}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.panel{padding:13px}.station{grid-template-columns:auto 1fr}.station-actions{grid-column:2}.station-actions button{flex:1}}
+  </style>
+</head>
+<body>
+<main>
+  <header><div><h1>Rádio Conexão FM</h1><div class="muted">Painel administrativo de emissoras</div></div><button id="logout" class="secondary fit hidden">Sair</button></header>
+  <section id="login" class="panel">
+    <h2>Acesso protegido</h2>
+    <p class="muted">Informe o token administrativo configurado no Cloudflare Worker.</p>
+    <form id="login-form"><label for="token">Token de acesso</label><input id="token" type="password" autocomplete="current-password" required><button type="submit">Entrar</button></form>
+    <div id="login-message" class="status hidden"></div>
+  </section>
+  <section id="dashboard" class="hidden">
+    <div class="grid">
+      <div class="stat"><strong id="total">—</strong><span class="muted">Rádios cadastradas</span></div>
+      <div class="stat"><strong id="active">—</strong><span class="muted">Ativas</span></div>
+      <div class="stat"><strong id="verified">—</strong><span class="muted">Verificadas</span></div>
+      <div class="stat"><strong id="categories">—</strong><span class="muted">Categorias</span></div>
+    </div>
+    <section class="panel">
+      <h2>Buscar rádios automaticamente</h2>
+      <p class="hint">Pesquisa no diretório público Radio Browser, em páginas de 100 resultados. O diretório indica disponibilidade recente; use Testar áudio para conferir a transmissão.</p>
+      <form id="discover-form">
+        <div class="row">
+          <div><label for="country">País (código)</label><input id="country" value="BR" maxlength="2"></div>
+          <div><label for="tag">Estilo / categoria</label><input id="tag" placeholder="sertanejo, gospel, rock..."></div>
+          <div><label for="search-name">Nome (opcional)</label><input id="search-name" placeholder="Nome da rádio"></div>
+          <div class="fit" style="align-self:end"><button type="submit">Buscar rádios</button></div><div class="fit" style="align-self:end"><button id="next-page" type="button" class="secondary" disabled>Próximas 100</button></div>
+        </div>
+      </form>
+      <div id="discover-message" class="status hidden"></div>
+      <div id="candidates"></div>
+      <div id="import-actions" class="row hidden">
+        <span id="selected-count" class="muted">0 selecionadas</span>
+        <button id="import-selected" class="fit" type="button">Importar selecionadas</button>
+      </div>
+    </section>
+    <section class="panel">
+      <h2>Adicionar rádio manualmente</h2>
+      <form id="manual-form">
+        <div class="row"><div><label>Nome da rádio *</label><input name="name" required maxlength="120"></div><div><label>URL da transmissão *</label><input name="stream_url" type="url" required placeholder="https://..."></div></div>
+        <div class="row"><div><label>Site</label><input name="website_url" type="url" placeholder="https://..."></div><div><label>Logo (URL)</label><input name="logo_url" type="url" placeholder="https://..."></div></div>
+        <div class="row"><div><label>Estado</label><input name="state" maxlength="80"></div><div><label>Cidade</label><input name="city" maxlength="100"></div><div><label>Idioma</label><input name="language" value="pt-BR" maxlength="20"></div></div>
+        <div class="row"><button id="test-manual" class="secondary fit" type="button">Testar transmissão</button><button class="fit" type="submit">Cadastrar rádio</button></div>
+      </form>
+    </section>
+    <section class="panel">
+      <h2>Rádios cadastradas</h2>
+      <div class="row"><input id="station-search" placeholder="Buscar por nome, cidade ou slug"><button id="refresh" class="secondary fit" type="button">Atualizar</button></div>
+      <div id="station-list"></div>
+    </section>
+  </section>
+  <div id="global-message" class="status hidden"></div>
+  <div class="footer">Acesso restrito. Não compartilhe o token administrativo.</div>
+</main>
+<script>
+(() => {
+  const API = "https://radio-conexao-api.bieljuniho.workers.dev";
+  const $ = (id) => document.getElementById(id);
+  let token = sessionStorage.getItem("radioAdminToken") || "";
+  let candidates = [];
+  let discoverOffset = 0;
+  let testedManual = false;
+  const show = (id, message, type = "") => {
+    const el = $(id); el.textContent = message; el.className = "status" + (type ? " " + type : "");
+    el.classList.remove("hidden");
+  };
+  const hide = (id) => $(id).classList.add("hidden");
+  async function api(path, options = {}) {
+    const response = await fetch(API + path, {
+      ...options,
+      headers: { "Authorization": "Bearer " + token, ...(options.body ? {"Content-Type":"application/json"} : {}), ...(options.headers || {}) }
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.message || data.error || "Falha na API (" + response.status + ")");
+    return data;
+  }
+  function setConnected(value) {
+    $("login").classList.toggle("hidden", value);
+    $("dashboard").classList.toggle("hidden", !value);
+    $("logout").classList.toggle("hidden", !value);
+  }
+  async function connect() {
+    const data = await api("/api/admin/summary");
+    $("total").textContent = data.stations; $("active").textContent = data.active;
+    $("verified").textContent = data.verified; $("categories").textContent = data.categories;
+    setConnected(true); await loadStations();
+  }
+  $("login-form").addEventListener("submit", async e => {
+    e.preventDefault(); token = $("token").value.trim();
+    try { await connect(); sessionStorage.setItem("radioAdminToken", token); hide("login-message"); }
+    catch (err) { token = ""; show("login-message", err.message, "error"); }
+  });
+  $("logout").addEventListener("click", () => { token = ""; sessionStorage.removeItem("radioAdminToken"); setConnected(false); });
+  async function discover(reset = false) {
+    if (reset) { candidates = []; discoverOffset = 0; $("candidates").replaceChildren(); }
+    hide("discover-message");
+    const params = new URLSearchParams({country:$("country").value.trim() || "BR", tag:$("tag").value.trim(), name:$("search-name").value.trim(), limit:"100", offset:String(discoverOffset)});
+    try {
+      const data = await api("/api/admin/discover?" + params);
+      const known = new Set(candidates.map(item => item.stationuuid));
+      const fresh = (data.stations || []).filter(item => !known.has(item.stationuuid));
+      candidates = candidates.concat(fresh); renderCandidates();
+      discoverOffset += 100;
+      $("next-page").disabled = fresh.length === 0;
+      show("discover-message", fresh.length + " novas rádios encontradas neste lote; " + candidates.length + " no total.", "ok");
+    } catch (err) { show("discover-message", err.message, "error"); }
+  }
+  $("discover-form").addEventListener("submit", async e => { e.preventDefault(); await discover(true); });
+  $("next-page").addEventListener("click", async () => { $("next-page").disabled = true; await discover(false); });
+  function renderCandidates() {
+    const root = $("candidates"); root.replaceChildren();
+    for (let i=0;i<candidates.length;i++) {
+      const item=candidates[i], row=document.createElement("div"); row.className="station";
+      const check=document.createElement("input"); check.type="checkbox"; check.checked=true; check.dataset.index=i; check.setAttribute("aria-label","Selecionar "+item.name);
+      const info=document.createElement("div"), name=document.createElement("strong"), meta=document.createElement("small"), badge=document.createElement("span");
+      name.textContent=item.name; meta.textContent=[item.country_code,item.state,item.codec,item.bitrate ? item.bitrate+" kbps" : ""].filter(Boolean).join(" • ");
+      badge.className="badge"; badge.textContent="Diretório: disponível";
+      info.append(name,meta,badge);
+      const actions=document.createElement("div"); actions.className="station-actions";
+      const test=document.createElement("button"); test.type="button"; test.className="secondary"; test.textContent="Testar áudio";
+      test.addEventListener("click",async()=>{test.disabled=true;test.textContent="Testando...";try{const result=await api("/api/admin/test-stream",{method:"POST",body:JSON.stringify({stream_url:item.stream_url})});test.textContent=result.ok?"Áudio OK":"Falhou";test.className=result.ok?"":"danger";}catch(err){test.textContent="Erro";}finally{test.disabled=false;}});
+      actions.append(test); row.append(check,info,actions); root.append(row);
+    }
+    $("import-actions").classList.toggle("hidden",!candidates.length);
+    updateSelected();
+    root.querySelectorAll("input[type=checkbox]").forEach(el=>el.addEventListener("change",updateSelected));
+  }
+  function updateSelected(){const count=$("candidates").querySelectorAll("input:checked").length;$("selected-count").textContent=count+" selecionadas (até 100 por envio)";$("import-selected").disabled=!count;}
+  $("import-selected").addEventListener("click",async()=>{
+    const selectedAll=[...$("candidates").querySelectorAll("input:checked")].map(el=>candidates[Number(el.dataset.index)]);
+    const selected=selectedAll.slice(0,100);
+    $("import-selected").disabled=true;$("import-selected").textContent="Importando...";
+    try{const result=await api("/api/admin/import/radio-browser",{method:"POST",body:JSON.stringify({stations:selected})});const processed=new Set(selected.map(item=>item.stationuuid));candidates=candidates.filter(item=>!processed.has(item.stationuuid));renderCandidates();show("discover-message",result.imported+" rádios importadas; "+result.duplicates+" duplicadas ignoradas; "+result.category_links+" categorias vinculadas. "+candidates.length+" ainda na lista.","ok");await connect();}
+    catch(err){show("discover-message",err.message,"error");}
+    finally{$("import-selected").textContent="Importar selecionadas";updateSelected();}
+  });
+  $("test-manual").addEventListener("click",async()=>{
+    const url=$("manual-form").elements.stream_url.value.trim();if(!url){show("global-message","Informe a URL da transmissão.","error");return;}
+    try{const result=await api("/api/admin/test-stream",{method:"POST",body:JSON.stringify({stream_url:url})});testedManual=result.ok;show("global-message",result.ok?"Transmissão respondeu corretamente.":"Não foi possível confirmar a transmissão. HTTP "+(result.status||"—"),result.ok?"ok":"error");}
+    catch(err){testedManual=false;show("global-message",err.message,"error");}
+  });
+  $("manual-form").elements.stream_url.addEventListener("input",()=>testedManual=false);
+  $("manual-form").addEventListener("submit",async e=>{
+    e.preventDefault();if(!testedManual){show("global-message","Teste a transmissão antes de cadastrar.","error");return;}
+    const form=new FormData(e.currentTarget), body=Object.fromEntries(form.entries());
+    try{const result=await api("/api/admin/stations",{method:"POST",body:JSON.stringify(body)});show("global-message","Rádio cadastrada: "+result.slug,"ok");e.currentTarget.reset();testedManual=false;await connect();}
+    catch(err){show("global-message",err.message,"error");}
+  });
+  async function loadStations(){
+    try{const q=encodeURIComponent($("station-search").value.trim());const data=await api("/api/admin/stations?limit=100&q="+q);const root=$("station-list");root.replaceChildren();
+      for(const item of data.stations){const row=document.createElement("div");row.className="station";const spacer=document.createElement("span");const info=document.createElement("div");const name=document.createElement("strong");const meta=document.createElement("small");name.textContent=item.name;meta.textContent=[item.city,item.state,item.category_names,item.is_active?"Ativa":"Inativa"].filter(Boolean).join(" • ");info.append(name,meta);const actions=document.createElement("div");actions.className="station-actions";const toggle=document.createElement("button");toggle.type="button";toggle.className=item.is_active?"danger":"secondary";toggle.textContent=item.is_active?"Desativar":"Ativar";toggle.addEventListener("click",async()=>{toggle.disabled=true;try{await api("/api/admin/stations/"+item.id+"/status",{method:"POST",body:JSON.stringify({is_active:!item.is_active})});await connect();}catch(err){show("global-message",err.message,"error");toggle.disabled=false;}});actions.append(toggle);row.append(spacer,info,actions);root.append(row);}
+      if(!data.stations.length)root.textContent="Nenhuma rádio encontrada.";
+    }catch(err){show("global-message",err.message,"error");}
+  }
+  $("refresh").addEventListener("click",loadStations);
+  $("station-search").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();loadStations();}});
+  if(token){connect().catch(()=>{token="";sessionStorage.removeItem("radioAdminToken");setConnected(false);});}
+})();
+</script>
+</body>
+</html>
