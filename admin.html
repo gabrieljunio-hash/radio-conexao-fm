@@ -46,13 +46,13 @@
     </div>
     <section class="panel">
       <h2>Buscar rádios automaticamente</h2>
-      <p class="hint">Pesquisa no diretório público Radio Browser, em páginas de 100 resultados. O diretório indica disponibilidade recente; use Testar áudio para conferir a transmissão.</p>
+      <p class="hint">Pesquisa no diretório Radio Browser. A busca pula rádios já cadastradas e analisa até 5 lotes de 100 por vez; use Testar áudio para conferir a transmissão.</p>
       <form id="discover-form">
         <div class="row">
           <div><label for="country">País (código)</label><input id="country" value="BR" maxlength="2"></div>
           <div><label for="tag">Estilo / categoria</label><input id="tag" placeholder="sertanejo, gospel, rock..."></div>
           <div><label for="search-name">Nome (opcional)</label><input id="search-name" placeholder="Nome da rádio"></div>
-          <div class="fit" style="align-self:end"><button type="submit">Buscar rádios</button></div><div class="fit" style="align-self:end"><button id="next-page" type="button" class="secondary" disabled>Próximas 100</button></div>
+          <div class="fit" style="align-self:end"><button type="submit">Buscar rádios</button></div><div class="fit" style="align-self:end"><button id="next-page" type="button" class="secondary" disabled>Continuar busca</button></div>
         </div>
       </form>
       <div id="discover-message" class="status hidden"></div>
@@ -135,11 +135,17 @@
       const known = new Set(candidates.map(item => item.stationuuid));
       const fresh = (data.stations || []).filter(item => !known.has(item.stationuuid));
       candidates = candidates.concat(fresh); renderCandidates();
-      discoverOffset += 100;
+      discoverOffset = Number(data.next_offset ?? (discoverOffset + 100));
       $("next-page").disabled = data.has_more === false || discoverOffset > 5000;
       const duplicates = Number(data.duplicates || 0);
-      show("discover-message", fresh.length + " novas rádios; " + duplicates + " já cadastradas ignoradas neste lote; " + candidates.length + " novas no total.", "ok");
+      const checked = Number(data.checked || 0);
+      const pages = Number(data.pages_scanned || 1);
+      const summary = fresh.length
+        ? checked + " rádios analisadas em " + pages + " lotes; " + duplicates + " duplicadas/indisponíveis ignoradas; " + fresh.length + " novas encontradas. " + candidates.length + " novas no total."
+        : checked + " rádios analisadas em " + pages + " lotes; " + duplicates + " duplicadas/indisponíveis ignoradas; nenhuma nova neste trecho.";
+      show("discover-message", summary + (data.has_more ? " Você pode continuar a busca." : " Fim dos resultados disponíveis para este filtro."), "ok");
     } catch (err) { show("discover-message", err.message, "error"); }
+    finally { $("next-page").disabled = discoverOffset > 5000; }
   }
   $("discover-form").addEventListener("submit", async e => { e.preventDefault(); await discover(true); });
   $("next-page").addEventListener("click", async () => { $("next-page").disabled = true; await discover(false); });
