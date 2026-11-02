@@ -84,7 +84,8 @@
 (() => {
   const API = "https://radio-conexao-api.bieljuniho.workers.dev";
   const $ = (id) => document.getElementById(id);
-  let token = sessionStorage.getItem("radioAdminToken") || "";
+  let token = localStorage.getItem("radioAdminToken") || sessionStorage.getItem("radioAdminToken") || "";
+  if (token) { localStorage.setItem("radioAdminToken", token); localStorage.removeItem("radioAdminToken"); sessionStorage.removeItem("radioAdminToken"); }
   let candidates = [];
   let discoverOffset = 0;
   let testedManual = false;
@@ -122,7 +123,7 @@
   });
   $("login-form").addEventListener("submit", async e => {
     e.preventDefault(); token = $("token").value.trim();
-    try { await connect(); sessionStorage.setItem("radioAdminToken", token); hide("login-message"); }
+    try { await connect(); localStorage.setItem("radioAdminToken", token); hide("login-message"); }
     catch (err) { token = ""; show("login-message", err.message, "error"); }
   });
   $("logout").addEventListener("click", () => { token = ""; sessionStorage.removeItem("radioAdminToken"); setConnected(false); });
