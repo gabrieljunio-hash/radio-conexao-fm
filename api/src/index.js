@@ -238,11 +238,10 @@ async function handleAdmin(request, env, url, origin) {
         seenUrls.add(stream);
         seenSlugs.add(slug);
         stations.push(item);
-        if (stations.length >= limit) break;
       }
 
       offset += 100;
-      if (directoryItems.length < 100) break;
+      if (stations.length >= limit || directoryItems.length < 100) break;
     }
 
     const hasMore = lastPageSize === 100 && offset <= 5000;
