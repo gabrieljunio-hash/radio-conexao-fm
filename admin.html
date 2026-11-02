@@ -141,8 +141,8 @@
       const checked = Number(data.checked || 0);
       const pages = Number(data.pages_scanned || 1);
       const summary = fresh.length
-        ? checked + " rádios analisadas em " + pages + " lotes; " + duplicates + " duplicadas/indisponíveis ignoradas; " + fresh.length + " novas encontradas. " + candidates.length + " novas no total."
-        : checked + " rádios analisadas em " + pages + " lotes; " + duplicates + " duplicadas/indisponíveis ignoradas; nenhuma nova neste trecho.";
+        ? checked + " rádios analisadas em " + pages + " lotes; " + duplicates + " duplicadas ignoradas; " + fresh.length + " novas encontradas. " + candidates.length + " novas no total."
+        : checked + " rádios analisadas em " + pages + " lotes; " + duplicates + " duplicadas ignoradas; nenhuma nova neste trecho.";
       show("discover-message", summary + (data.has_more ? " Você pode continuar a busca." : " Fim dos resultados disponíveis para este filtro."), "ok");
     } catch (err) {
       show("discover-message", err.message, "error");
