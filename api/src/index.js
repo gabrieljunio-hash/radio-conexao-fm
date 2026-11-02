@@ -158,62 +158,102 @@ async function handleAdmin(request, env, url, origin) {
 
   if (request.method === "GET" && url.pathname === "/api/admin/discover") {
     const limit = Math.min(Math.max(Number.parseInt(url.searchParams.get("limit") || "100", 10) || 100, 1), 100);
-    const offset = Math.min(Math.max(Number.parseInt(url.searchParams.get("offset") || "0", 10) || 0, 0), 5000);
-    const params = new URLSearchParams({ hidebroken: "true", order: "clickcount", reverse: "true", limit: String(limit), offset: String(offset) });
+    const startOffset = Math.min(Math.max(Number.parseInt(url.searchParams.get("offset") || "0", 10) || 0, 0), 5000);
     const name = (url.searchParams.get("name") || "").trim().slice(0, 80);
     const country = (url.searchParams.get("country") || "BR").trim().toUpperCase().slice(0, 2);
     const tag = (url.searchParams.get("tag") || "").trim().slice(0, 50);
-    if (name) params.set("name", name);
-    if (country) params.set("countrycode", country);
-    if (tag) params.set("tag", tag);
-    const response = await fetch("https://all.api.radio-browser.info/json/stations/search?" + params.toString(), {
-      headers: { "User-Agent": "RadioConexaoFM/1.0 (catalog importer)", "Accept": "application/json" },
-      signal: AbortSignal.timeout(12000)
-    });
-    if (!response.ok) return adminJson({ error: "directory_unavailable", status: response.status }, 502, origin);
-    const data = await response.json();
-    const directoryItems = Array.isArray(data) ? data : [];
-    const normalized = directoryItems.filter(item =>
-      item && Number(item.lastcheckok) === 1 && item.stationuuid && item.name && safePublicUrl(item.url_resolved || item.url)
-    ).map(item => ({
-      stationuuid: String(item.stationuuid),
-      name: String(item.name).trim().slice(0, 120),
-      stream_url: safePublicUrl(item.url_resolved || item.url),
-      website_url: safePublicUrl(item.homepage),
-      logo_url: safePublicUrl(item.favicon),
-      country_code: String(item.countrycode || country || "BR").slice(0, 2).toUpperCase(),
-      state: String(item.state || "").slice(0, 80),
-      city: String(item.city || "").slice(0, 100),
-      language: String(item.language || "pt").split(",")[0].slice(0, 20),
-      tags: String(item.tags || "").split(",").map(tagValue => tagValue.trim().toLowerCase()).filter(Boolean).slice(0, 12),
-      bitrate: Number(item.bitrate || 0),
-      codec: String(item.codec || "").slice(0, 20),
-      directory_checked: true
-    }));
-    const urls = [...new Set(normalized.map(item => item.stream_url.toLowerCase()))];
-    const slugs = [...new Set(normalized.map(item => "rb-" + item.stationuuid.toLowerCase().replace(/[^a-f0-9-]/g, "").slice(0, 40)))];
-    const existingUrls = new Set();
-    const existingSlugs = new Set();
-    if (urls.length) {
-      const placeholders = urls.map(() => "?").join(",");
-      const result = await env.DB.prepare(`SELECT lower(stream_url) AS stream_url FROM stations WHERE lower(stream_url) IN (${placeholders})`).bind(...urls).all();
-      for (const row of result.results || []) existingUrls.add(String(row.stream_url).toLowerCase());
+    const stations = [];
+    const seenUrls = new Set();
+    const seenSlugs = new Set();
+    let checked = 0;
+    let duplicates = 0;
+    let offset = startOffset;
+    let pages = 0;
+    let lastPageSize = 0;
+
+    // Skip already registered stations automatically, scanning up to five
+    // directory pages per request to keep each Worker request bounded.
+    while (stations.length < limit && offset <= 5000 && pages < 5) {
+      const params = new URLSearchParams({
+        hidebroken: "true", order: "clickcount", reverse: "true",
+        limit: "100", offset: String(offset)
+      });
+      if (name) params.set("name", name);
+      if (country) params.set("countrycode", country);
+      if (tag) params.set("tag", tag);
+
+      const response = await fetch("https://all.api.radio-browser.info/json/stations/search?" + params.toString(), {
+        headers: { "User-Agent": "RadioConexaoFM/1.0 (catalog importer)", "Accept": "application/json" },
+        signal: AbortSignal.timeout(10000)
+      });
+      if (!response.ok) return adminJson({ error: "directory_unavailable", status: response.status, checked, duplicates, next_offset: offset }, 502, origin);
+
+      const data = await response.json();
+      const directoryItems = Array.isArray(data) ? data : [];
+      lastPageSize = directoryItems.length;
+      pages += 1;
+      checked += directoryItems.length;
+
+      const normalized = directoryItems.filter(item =>
+        item && Number(item.lastcheckok) === 1 && item.stationuuid && item.name && safePublicUrl(item.url_resolved || item.url)
+      ).map(item => ({
+        stationuuid: String(item.stationuuid),
+        name: String(item.name).trim().slice(0, 120),
+        stream_url: safePublicUrl(item.url_resolved || item.url),
+        website_url: safePublicUrl(item.homepage),
+        logo_url: safePublicUrl(item.favicon),
+        country_code: String(item.countrycode || country || "BR").slice(0, 2).toUpperCase(),
+        state: String(item.state || "").slice(0, 80),
+        city: String(item.city || "").slice(0, 100),
+        language: String(item.language || "pt").split(",")[0].slice(0, 20),
+        tags: String(item.tags || "").split(",").map(tagValue => tagValue.trim().toLowerCase()).filter(Boolean).slice(0, 12),
+        bitrate: Number(item.bitrate || 0),
+        codec: String(item.codec || "").slice(0, 20),
+        directory_checked: true
+      }));
+
+      const urls = [...new Set(normalized.map(item => item.stream_url.toLowerCase()))];
+      const slugs = [...new Set(normalized.map(item => "rb-" + item.stationuuid.toLowerCase().replace(/[^a-f0-9-]/g, "").slice(0, 40)))];
+      const existingUrls = new Set();
+      const existingSlugs = new Set();
+
+      if (urls.length) {
+        const placeholders = urls.map(() => "?").join(",");
+        const result = await env.DB.prepare(`SELECT lower(stream_url) AS stream_url FROM stations WHERE lower(stream_url) IN (${placeholders})`).bind(...urls).all();
+        for (const row of result.results || []) existingUrls.add(String(row.stream_url).toLowerCase());
+      }
+      if (slugs.length) {
+        const placeholders = slugs.map(() => "?").join(",");
+        const result = await env.DB.prepare(`SELECT slug FROM stations WHERE slug IN (${placeholders})`).bind(...slugs).all();
+        for (const row of result.results || []) existingSlugs.add(String(row.slug));
+      }
+
+      for (const item of normalized) {
+        const slug = "rb-" + item.stationuuid.toLowerCase().replace(/[^a-f0-9-]/g, "").slice(0, 40);
+        const stream = item.stream_url.toLowerCase();
+        if (existingUrls.has(stream) || existingSlugs.has(slug) || seenUrls.has(stream) || seenSlugs.has(slug)) {
+          duplicates += 1;
+          continue;
+        }
+        seenUrls.add(stream);
+        seenSlugs.add(slug);
+        stations.push(item);
+      }
+
+      offset += 100;
+      if (stations.length >= limit || directoryItems.length < 100) break;
     }
-    if (slugs.length) {
-      const placeholders = slugs.map(() => "?").join(",");
-      const result = await env.DB.prepare(`SELECT slug FROM stations WHERE slug IN (${placeholders})`).bind(...slugs).all();
-      for (const row of result.results || []) existingSlugs.add(String(row.slug));
-    }
-    const stations = normalized.filter(item => {
-      const slug = "rb-" + item.stationuuid.toLowerCase().replace(/[^a-f0-9-]/g, "").slice(0, 40);
-      return !existingUrls.has(item.stream_url.toLowerCase()) && !existingSlugs.has(slug);
-    });
+
+    const hasMore = lastPageSize === 100 && offset <= 5000;
     return adminJson({
       stations,
       count: stations.length,
-      duplicates: normalized.length - stations.length,
-      checked: normalized.length,
-      has_more: directoryItems.length >= limit,
+      duplicates,
+      checked,
+      pages_scanned: pages,
+      next_offset: offset,
+      has_more: hasMore,
+      exhausted: !hasMore,
       source: "Radio Browser"
     }, 200, origin);
   }
