@@ -199,7 +199,7 @@
   }
   $("refresh").addEventListener("click",loadStations);
   $("station-search").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();loadStations();}});
-  if(token){connect().catch(()=>{token="";sessionStorage.removeItem("radioAdminToken");setConnected(false);});}
+  if(token){connect().catch(()=>{token="";localStorage.removeItem("radioAdminToken");sessionStorage.removeItem("radioAdminToken");setConnected(false);});}
 })();
 </script>
 </body>
