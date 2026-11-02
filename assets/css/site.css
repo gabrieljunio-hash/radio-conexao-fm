@@ -1173,3 +1173,15 @@ a{text-underline-offset:3px}
     box-sizing:border-box;
   }
 }
+
+/* Etapa 1: histórico verdadeiro e ranking de audiência */
+.section-subtitle{margin:5px 0 0;color:#7d8493;font-size:12px}
+.popular-stations{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.popular-station{display:flex;align-items:center;gap:12px;min-width:0;padding:10px 12px;background:#fff;border:1px solid #e4e6eb;border-radius:14px}
+.popular-position{width:20px;flex:0 0 20px;text-align:center;color:#e76652;font-weight:800;font-size:15px}
+.popular-cover{width:48px;height:48px;flex:0 0 48px;position:relative;overflow:hidden;border-radius:10px;background:#17213a}
+.popular-logo{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;padding:5px}
+.popular-info{display:flex;flex:1;min-width:0;flex-direction:column;gap:4px}
+.popular-info strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:#17213a}
+.popular-info small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#818999;font-size:10px}
+@media(max-width:740px){.popular-stations{grid-template-columns:1fr}.popular-station{padding:9px 10px}.popular-cover{width:44px;height:44px;flex-basis:44px}}
