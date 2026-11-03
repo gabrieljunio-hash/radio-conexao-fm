@@ -3,12 +3,7 @@ name: Site tests
 on:
   push:
     branches:
-      - feature/monetization-stage5
-  pull_request:
-    branches:
-      - main
-      - feature/home-recent-popular-stage1
-  workflow_dispatch:
+      - feature/monetization-stage5  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
