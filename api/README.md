@@ -15,8 +15,8 @@ Para executar os comandos a partir da raiz do repositório, informe o caminho co
 ```bash
 npx wrangler dev --config api/wrangler.toml
 npx wrangler preview --config api/wrangler.toml
-npx wrangler deploy --config api/wrangler.toml
 npx wrangler d1 migrations apply radio-conexao-db --remote --config api/wrangler.toml
+npx wrangler deploy --config api/wrangler.toml
 ```
 
 No painel **Workers & Pages → radio-conexao-api → Settings → Builds**, configure o diretório raiz como `api`. Assim, comandos executados dentro do diretório do Worker encontram `wrangler.toml` e `src/index.js` sem duplicar a configuração na raiz.
