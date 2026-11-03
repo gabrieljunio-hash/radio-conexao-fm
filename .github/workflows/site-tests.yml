@@ -33,6 +33,8 @@ jobs:
         run: npx --yes wrangler@latest deploy --dry-run --config api/wrangler.toml
       - name: Validate full D1 import migration
         run: python3 tests/d1-migration.test.py
+      - name: Validate sponsored campaign migration
+        run: python3 tests/sponsored-campaigns-migration.test.py
       - name: Install test dependencies
         run: npm install --no-save @playwright/test
       - name: Install Chromium
