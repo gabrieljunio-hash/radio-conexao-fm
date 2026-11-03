@@ -4,7 +4,10 @@
   "version": "1.0.0",
   "scripts": {
     "test": "playwright test",
-    "test:report": "playwright show-report"
+    "test:report": "playwright show-report",
+    "dev:api": "wrangler dev --config api/wrangler.toml",
+    "preview:api": "wrangler preview --config api/wrangler.toml",
+    "deploy:api": "wrangler deploy --config api/wrangler.toml"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.1"
