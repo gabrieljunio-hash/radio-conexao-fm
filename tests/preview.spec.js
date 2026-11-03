@@ -57,7 +57,7 @@ test("Preview responde corretamente em viewport mobile", async ({ page }) => {
   expect(dimensions.body, "Conteúdo do body ultrapassa a largura do viewport: " + JSON.stringify(dimensions)).toBeLessThanOrEqual(dimensions.viewport + 1);
 });
 
-test("Player envia eventos de audiência apenas para rádios do catálogo próprio", async ({ page }) {
+test("Player envia eventos de audiência apenas para rádios do catálogo próprio", async ({ page }) => {
   let payload = null;
   await page.addInitScript(() => {
     localStorage.setItem("conexao-fm-data-saver", "0");
