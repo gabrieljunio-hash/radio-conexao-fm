@@ -311,6 +311,23 @@ test("admin campaign creation is protected and always starts as draft", async ()
   assert.equal(DB.calls[0].values[0], "Comércio local");
 });
 
+test("admin campaign creation requires HTTPS destination links", async () => {
+  const DB = mockDb();
+  const response = await worker.fetch(
+    new Request("https://api.example.com/api/admin/promotions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer test-secret-0123456789-abcdefghijklmnop" },
+      body: JSON.stringify({
+        advertiser_name: "Loja", title: "Oferta", destination_url: "http://example.com/oferta",
+        starts_at: "2026-11-01T00:00:00Z", ends_at: "2026-12-01T00:00:00Z"
+      })
+    }), { DB, ADMIN_TOKEN: "test-secret-0123456789-abcdefghijklmnop" }
+  );
+  assert.equal(response.status, 400);
+  assert.equal((await response.json()).error, "invalid_campaign_fields");
+  assert.equal(DB.calls.length, 0);
+});
+
 test("admin campaign creation rejects unsafe URLs and invalid dates", async () => {
   const DB = mockDb();
   const response = await worker.fetch(
