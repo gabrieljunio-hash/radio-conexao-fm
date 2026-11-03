@@ -56,7 +56,7 @@ A publicação não altera o site Pages nem a branch `main`. Não remova o bindi
 - `GET /api/stations` — lista rádios ativas.
 - `POST /api/events` — registra eventos agregados de reprodução para rádios do catálogo próprio. Recebe `event_type` (`play`, `stop` ou `heartbeat`), `station_slug` e `session_id` UUID v4.
 - `GET /api/promotions?placement=home|explorar|radio` — lista somente campanhas ativas dentro da vigência, sem expor métricas administrativas.
-- `POST /api/promotions/:id/event` — soma impressão ou clique, sem registrar IP ou identificador individual.
+- `POST /api/promotions/:id/event` — soma impressão ou clique, com limite de 60 eventos por IP/minuto via Cloudflare Rate Limiting; o IP é usado apenas como chave efêmera e não é gravado no D1.
 - Filtros de rádios: `q`, `category`, `state`, `city`, `limit` (máximo 100) e `offset`.
 
 Exemplos:
