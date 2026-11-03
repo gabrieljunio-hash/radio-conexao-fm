@@ -57,28 +57,65 @@ test("Preview responde corretamente em viewport mobile", async ({ page }) => {
   expect(dimensions.body, "Conteúdo do body ultrapassa a largura do viewport: " + JSON.stringify(dimensions)).toBeLessThanOrEqual(dimensions.viewport + 1);
 });
 
-test("Player envia eventos de audiência apenas para rádios do catálogo próprio", async ({ page }) => {
+test("Player envia eventos de audiência apenas para rádios do catálogo próprio", async ({ page }) {
   let payload = null;
   await page.addInitScript(() => {
+    localStorage.setItem("conexao-fm-data-saver", "0");
     HTMLMediaElement.prototype.play = function () {
       this.dispatchEvent(new Event("playing"));
       return Promise.resolve();
     };
   });
+  // Use a deterministic station with a real stream URL. Some live D1 rows
+  // only have an external player and cannot trigger the audio tracking event.
+  await page.route(API + "/api/stations**", route => route.fulfill({
+    status: 200,
+    contentType: "application/json",
+    body: JSON.stringify({
+      stations: [{
+        slug: "radio-teste",
+        name: "Rádio Teste",
+        stream_url: "https://stream.example.test/live",
+        logo_url: "",
+        city: "São Paulo",
+        categories: ["pop"]
+      }],
+      pagination: { total: 1, limit: 100, offset: 0, has_more: false }
+    })
+  }));
   await page.route(API + "/api/events", async route => {
-    payload = route.request().postDataJSON();
-    await route.fulfill({ status: 201, contentType: "application/json", body: JSON.stringify({ ok: true, recorded: true }) });
+    const request = route.request();
+    const origin = "https://feature-home-recent-popular.radio-conexao-fm.pages.dev";
+    if (request.method() === "OPTIONS") {
+      await route.fulfill({
+        status: 204,
+        headers: {
+          "Access-Control-Allow-Origin": origin,
+          "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type, Authorization",
+          "Access-Control-Max-Age": "86400",
+          "Vary": "Origin"
+        }
+      });
+      return;
+    }
+    payload = request.postDataJSON();
+    await route.fulfill({
+      status: 201,
+      contentType: "application/json",
+      headers: { "Access-Control-Allow-Origin": origin },
+      body: JSON.stringify({ ok: true, recorded: true })
+    });
   });
   await page.goto("/?view=explorar");
-  const playButton = page.locator('#stations [data-play^="db-"]').first();
+  const playButton = page.locator('#stations [data-play="db-radio-teste"]');
   await expect(playButton).toBeVisible({ timeout: 20000 });
   await playButton.click();
   await expect.poll(() => payload).not.toBeNull();
   expect(payload.event_type).toBe("play");
-  expect(payload.station_slug).toMatch(/^[a-z0-9-]+$/);
+  expect(payload.station_slug).toBe("radio-teste");
   expect(payload.session_id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
 });
-
 
 test("Painel de audiência renderiza métricas e troca período", async ({ page }) => {
   const requests = [];
