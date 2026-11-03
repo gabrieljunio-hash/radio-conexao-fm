@@ -368,6 +368,48 @@ async function handleAdmin(request, env, url, origin) {
     return adminJson({ ok: true, changes: result.meta?.changes || 0 }, 200, origin);
   }
 
+  if (request.method === "GET" && url.pathname === "/api/admin/promotions") {
+    const result = await env.DB.prepare(
+      "SELECT id, advertiser_name, title, description, image_url, destination_url, placement, status, starts_at, ends_at, impressions, clicks, created_at FROM sponsored_campaigns ORDER BY created_at DESC LIMIT 100"
+    ).all();
+    return adminJson({ campaigns: result.results || [] }, 200, origin);
+  }
+
+  if (request.method === "POST" && url.pathname === "/api/admin/promotions") {
+    const body = await readJson(request);
+    const advertiser = String(body?.advertiser_name || "").trim().slice(0, 100);
+    const title = String(body?.title || "").trim().slice(0, 100);
+    const description = String(body?.description || "").trim().slice(0, 240);
+    const imageUrl = body?.image_url ? safePublicUrl(body.image_url) : null;
+    const destinationUrl = safePublicUrl(body?.destination_url);
+    const placement = String(body?.placement || "home");
+    const startsAt = new Date(body?.starts_at || "");
+    const endsAt = new Date(body?.ends_at || "");
+    if (advertiser.length < 2 || title.length < 3 || !destinationUrl ||
+        !["home", "explorar", "radio"].includes(placement) ||
+        !Number.isFinite(startsAt.getTime()) || !Number.isFinite(endsAt.getTime()) ||
+        endsAt <= startsAt || (body?.image_url && !imageUrl)) {
+      return adminJson({ error: "invalid_campaign_fields" }, 400, origin);
+    }
+    const result = await env.DB.prepare(
+      "INSERT INTO sponsored_campaigns (advertiser_name, title, description, image_url, destination_url, placement, status, starts_at, ends_at) VALUES (?, ?, ?, ?, ?, ?, 'draft', ?, ?)"
+    ).bind(advertiser, title, description, imageUrl, destinationUrl, placement, startsAt.toISOString(), endsAt.toISOString()).run();
+    return adminJson({ ok: true, id: result.meta?.last_row_id || null, status: "draft" }, 201, origin);
+  }
+
+  const promotionStatusMatch = url.pathname.match(/^\/api\/admin\/promotions\/(\d+)\/status$/);
+  if (request.method === "POST" && promotionStatusMatch) {
+    const body = await readJson(request);
+    const status = String(body?.status || "");
+    if (!["draft", "active", "paused"].includes(status)) {
+      return adminJson({ error: "invalid_campaign_status" }, 400, origin);
+    }
+    const result = await env.DB.prepare(
+      "UPDATE sponsored_campaigns SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?"
+    ).bind(status, Number(promotionStatusMatch[1])).run();
+    return adminJson({ ok: true, changes: result.meta?.changes || 0 }, 200, origin);
+  }
+
   return adminJson({ error: "not_found" }, 404, origin);
 }
 
@@ -497,6 +539,34 @@ export default {
           top_stations: top.results || [],
           daily: daily.results || []
         }, 200, origin);
+      }
+
+      if (url.pathname === "/api/promotions" && request.method === "GET") {
+        const placement = String(url.searchParams.get("placement") || "home");
+        if (!["home", "explorar", "radio"].includes(placement)) {
+          return json({ error: "invalid_placement" }, 400, origin);
+        }
+        const result = await env.DB.prepare(
+          "SELECT id, title, description, image_url, destination_url, advertiser_name, placement FROM sponsored_campaigns WHERE status = 'active' AND placement = ? AND datetime(starts_at) <= datetime('now') AND datetime(ends_at) > datetime('now') ORDER BY id DESC LIMIT 5"
+        ).bind(placement).all();
+        return json({ campaigns: result.results || [] }, 200, origin);
+      }
+
+      const promotionEventMatch = url.pathname.match(/^\/api\/promotions\/(\d+)\/event$/);
+      if (request.method === "POST" && promotionEventMatch) {
+        if (!request.headers.get("Content-Type")?.toLowerCase().includes("application/json")) {
+          return json({ error: "content_type_must_be_json" }, 415, origin);
+        }
+        const body = await readJson(request);
+        const eventType = String(body?.event_type || "");
+        if (!["impression", "click"].includes(eventType)) {
+          return json({ error: "invalid_promotion_event" }, 400, origin);
+        }
+        const column = eventType === "click" ? "clicks" : "impressions";
+        const result = await env.DB.prepare(
+          "UPDATE sponsored_campaigns SET " + column + " = " + column + " + 1 WHERE id = ? AND status = 'active' AND datetime(starts_at) <= datetime('now') AND datetime(ends_at) > datetime('now')"
+        ).bind(Number(promotionEventMatch[1])).run();
+        return json({ ok: true, recorded: (result.meta?.changes || 0) > 0 }, 202, origin);
       }
 
       if (url.pathname === "/api/categories") {
