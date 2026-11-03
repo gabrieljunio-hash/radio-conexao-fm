@@ -281,7 +281,7 @@ test("promotion event endpoint accepts only impressions and clicks", async () =>
     new Request("https://api.example.com/api/promotions/7/event", {
       method: "POST", headers: { "Content-Type": "application/json", Origin: ORIGIN },
       body: JSON.stringify({ event_type: "click" })
-    }), { DB }
+    }), { DB, PROMOTION_LIMITER: { async limit() { return { success: true }; } } }
   );
   assert.equal(response.status, 202);
   assert.deepEqual(await response.json(), { ok: true, recorded: true });
@@ -343,4 +343,35 @@ test("admin campaign creation rejects unsafe URLs and invalid dates", async () =
   assert.equal(response.status, 400);
   assert.equal((await response.json()).error, "invalid_campaign_fields");
   assert.equal(DB.calls.length, 0);
+});
+
+
+test("promotion events are rate limited per source IP before touching D1", async () => {
+  let dbTouched = false;
+  const DB = { prepare() { dbTouched = true; throw new Error("D1 must not be called"); } };
+  const response = await worker.fetch(
+    new Request("https://api.example.com/api/promotions/7/event", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "CF-Connecting-IP": "203.0.113.10" },
+      body: JSON.stringify({ event_type: "impression" })
+    }),
+    { DB, PROMOTION_LIMITER: { async limit({ key }) { assert.equal(key, "203.0.113.10"); return { success: false }; } } }
+  );
+  assert.equal(response.status, 429);
+  assert.equal(response.headers.get("Retry-After"), "60");
+  assert.equal((await response.json()).error, "rate_limited");
+  assert.equal(dbTouched, false);
+});
+
+test("promotion events fail closed when the rate limiter cannot identify the source", async () => {
+  const response = await worker.fetch(
+    new Request("https://api.example.com/api/promotions/7/event", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ event_type: "impression" })
+    }),
+    { DB: mockDb(), PROMOTION_LIMITER: { async limit() { return { success: true }; } } }
+  );
+  assert.equal(response.status, 503);
+  assert.equal((await response.json()).error, "rate_limit_identity_unavailable");
 });
