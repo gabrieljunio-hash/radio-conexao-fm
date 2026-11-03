@@ -479,6 +479,23 @@ export default {
       return json({ ok: true, recorded: true }, 201, origin);
     }
 
+    const promotionEventMatch = url.pathname.match(/^\/api\/promotions\/(\d+)\/event$/);
+    if (request.method === "POST" && promotionEventMatch) {
+      if (!request.headers.get("Content-Type")?.toLowerCase().includes("application/json")) {
+        return json({ error: "content_type_must_be_json" }, 415, origin);
+      }
+      const body = await readJson(request);
+      const eventType = String(body?.event_type || "");
+      if (!["impression", "click"].includes(eventType)) {
+        return json({ error: "invalid_promotion_event" }, 400, origin);
+      }
+      const column = eventType === "click" ? "clicks" : "impressions";
+      const result = await env.DB.prepare(
+        "UPDATE sponsored_campaigns SET " + column + " = " + column + " + 1 WHERE id = ? AND status = 'active' AND datetime(starts_at) <= datetime('now') AND datetime(ends_at) > datetime('now')"
+      ).bind(Number(promotionEventMatch[1])).run();
+      return json({ ok: true, recorded: (result.meta?.changes || 0) > 0 }, 202, origin);
+    }
+
     if (request.method !== "GET") {
       return json({ error: "method_not_allowed" }, 405, origin);
     }
@@ -552,22 +569,7 @@ export default {
         return json({ campaigns: result.results || [] }, 200, origin);
       }
 
-      const promotionEventMatch = url.pathname.match(/^\/api\/promotions\/(\d+)\/event$/);
-      if (request.method === "POST" && promotionEventMatch) {
-        if (!request.headers.get("Content-Type")?.toLowerCase().includes("application/json")) {
-          return json({ error: "content_type_must_be_json" }, 415, origin);
-        }
-        const body = await readJson(request);
-        const eventType = String(body?.event_type || "");
-        if (!["impression", "click"].includes(eventType)) {
-          return json({ error: "invalid_promotion_event" }, 400, origin);
-        }
-        const column = eventType === "click" ? "clicks" : "impressions";
-        const result = await env.DB.prepare(
-          "UPDATE sponsored_campaigns SET " + column + " = " + column + " + 1 WHERE id = ? AND status = 'active' AND datetime(starts_at) <= datetime('now') AND datetime(ends_at) > datetime('now')"
-        ).bind(Number(promotionEventMatch[1])).run();
-        return json({ ok: true, recorded: (result.meta?.changes || 0) > 0 }, 202, origin);
-      }
+
 
       if (url.pathname === "/api/categories") {
         const { results } = await env.DB.prepare(
