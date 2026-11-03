@@ -4,6 +4,11 @@ on:
   push:
     branches:
       - feature/monetization-stage5
+  pull_request:
+    branches:
+      - main
+      - feature/home-recent-popular-stage1
+    types: [opened, synchronize, reopened]
   workflow_dispatch:
 
 concurrency:
@@ -39,7 +44,7 @@ jobs:
       - name: Install dependencies
         run: npm install --no-save @playwright/test
       - name: Install Chromium
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install chromium
       - name: Run tests against real Preview
         env:
           CI: true
