@@ -192,6 +192,7 @@ function renderPopular(){
  target.innerHTML=stations.map((st,index)=>'<article class="popular-station"><span class="popular-position">'+(index+1)+'</span><div class="popular-cover">'+imageMarkup(st.favicon,st.name+" — logotipo","popular-logo")+'</div><div class="popular-info"><strong>'+esc(st.name)+'</strong><small>'+esc(st.city)+" · "+esc(st.genre)+'</small></div><button class="recent-play" data-popular-play="'+esc(st.id)+'" aria-label="Ouvir '+esc(st.name)+'">▶</button></article>').join("");
 }
 let sponsoredCampaigns=[];
+const seenSponsoredImpressions=new Set();
 async function loadPromotions(){
  try{
   const response=await fetch("https://radio-conexao-api.bieljuniho.workers.dev/api/promotions?placement=home",{cache:"no-store"});
@@ -208,15 +209,14 @@ function renderPromotions(){
  section.hidden=!visible;
  if(!visible){target.replaceChildren();return}
  target.innerHTML=sponsoredCampaigns.map(item=>'<a class="sponsored-card" href="'+esc(item.destination_url)+'" target="_blank" rel="noopener sponsored" data-promo-id="'+Number(item.id)+'" aria-label="Divulgação patrocinada: '+esc(item.title)+'"><img src="'+esc(item.image_url||"assets/radio.svg")+'" alt="" loading="lazy"><span class="sponsored-copy"><span class="sponsored-label">Patrocinado · '+esc(item.advertiser_name)+'</span><strong>'+esc(item.title)+'</strong><small>'+esc(item.description||"Conheça esta oferta")+'</small></span></a>').join("");
- const seen=new Set();
  const record=(id,eventType)=>fetch("https://radio-conexao-api.bieljuniho.workers.dev/api/promotions/"+id+"/event",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({event_type:eventType}),keepalive:true}).catch(()=>{});
  const cards=[...target.querySelectorAll("[data-promo-id]")];
  if("IntersectionObserver" in window){
   const observer=new IntersectionObserver(entries=>entries.forEach(entry=>{
-   if(entry.isIntersecting){const id=entry.target.dataset.promoId;if(!seen.has(id)){seen.add(id);record(id,"impression");observer.unobserve(entry.target)}}
+   if(entry.isIntersecting){const id=entry.target.dataset.promoId;if(!seenSponsoredImpressions.has(id)){seenSponsoredImpressions.add(id);record(id,"impression");observer.unobserve(entry.target)}}
   }),{threshold:.5});
   cards.forEach(card=>observer.observe(card));
- }else cards.forEach(card=>{const id=card.dataset.promoId;if(!seen.has(id)){seen.add(id);record(id,"impression")}});
+ }else cards.forEach(card=>{const id=card.dataset.promoId;if(!seenSponsoredImpressions.has(id)){seenSponsoredImpressions.add(id);record(id,"impression")}});
  cards.forEach(card=>card.addEventListener("click",()=>record(card.dataset.promoId,"click")));
 }
 function rememberRecent(st){
