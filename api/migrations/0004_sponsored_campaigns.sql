@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS sponsored_campaigns (
   image_url TEXT,
   destination_url TEXT NOT NULL,
   placement TEXT NOT NULL DEFAULT 'home'
-    CHECK (placement IN ('home', 'explorar', 'radio')),
+    CHECK (placement = 'home'),
   status TEXT NOT NULL DEFAULT 'draft'
     CHECK (status IN ('draft', 'active', 'paused')),
   starts_at TEXT NOT NULL,
