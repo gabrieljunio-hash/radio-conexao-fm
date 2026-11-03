@@ -14,3 +14,10 @@ migrations_dir = "migrations"
 [[previews.d1_databases]]
 binding = "DB"
 database_id = "cfcac14d-6938-46e7-a387-479bae5019e5"
+
+# Per-IP limit for public sponsored-campaign impression/click events.
+[[unsafe.bindings]]
+name = "PROMOTION_LIMITER"
+type = "ratelimit"
+namespace_id = "1001"
+simple = { limit = 60, period = 60 }
