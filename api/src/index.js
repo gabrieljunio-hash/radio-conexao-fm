@@ -489,6 +489,24 @@ export default {
       if (!["impression", "click"].includes(eventType)) {
         return json({ error: "invalid_promotion_event" }, 400, origin);
       }
+      // Cloudflare Rate Limiting binding: limits event submissions per source IP.
+      // The IP is used only as an ephemeral rate-limit key and is not written to D1.
+      if (env.PROMOTION_LIMITER) {
+        const sourceIp = request.headers.get("CF-Connecting-IP");
+        if (!sourceIp) return json({ error: "rate_limit_identity_unavailable" }, 503, origin);
+        let rate;
+        try {
+          rate = await env.PROMOTION_LIMITER.limit({ key: sourceIp });
+        } catch {
+          return json({ error: "rate_limit_unavailable" }, 503, origin);
+        }
+        if (!rate?.success) {
+          return new Response(JSON.stringify({ error: "rate_limited" }), {
+            status: 429,
+            headers: { "Content-Type": "application/json; charset=utf-8", "Retry-After": "60", ...corsHeaders(origin) },
+          });
+        }
+      }
       const column = eventType === "click" ? "clicks" : "impressions";
       const result = await env.DB.prepare(
         "UPDATE sponsored_campaigns SET " + column + " = " + column + " + 1 WHERE id = ? AND status = 'active' AND datetime(starts_at) <= datetime('now') AND datetime(ends_at) > datetime('now')"
