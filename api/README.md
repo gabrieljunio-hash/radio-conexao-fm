@@ -16,6 +16,7 @@ Para executar os comandos a partir da raiz do repositório, informe o caminho co
 npx wrangler dev --config api/wrangler.toml
 npx wrangler preview --config api/wrangler.toml
 npx wrangler deploy --config api/wrangler.toml
+npx wrangler d1 migrations apply radio-conexao-db --remote --config api/wrangler.toml
 ```
 
 No painel **Workers & Pages → radio-conexao-api → Settings → Builds**, configure o diretório raiz como `api`. Assim, comandos executados dentro do diretório do Worker encontram `wrangler.toml` e `src/index.js` sem duplicar a configuração na raiz.
@@ -27,6 +28,16 @@ O CI valida a configuração e o bundle sem publicar o Worker usando:
 ```bash
 npx wrangler deploy --dry-run --config api/wrangler.toml
 ```
+
+## Migrações D1
+
+A migração `migrations/0004_sponsored_campaigns.sql` cria a tabela de campanhas patrocinadas. Antes de publicar o Worker com as novas rotas, aplique a migração no banco remoto:
+
+```bash
+npx wrangler d1 migrations apply radio-conexao-db --remote --config api/wrangler.toml
+```
+
+A migração é repetível e não altera as tabelas existentes. Não execute a migração até revisar a branch e confirmar que deseja ativar a estrutura no banco de produção.
 
 ## Publicação pelo painel Cloudflare
 
@@ -44,6 +55,8 @@ A publicação não altera o site Pages nem a branch `main`. Não remova o bindi
 - `GET /api/categories` — lista categorias e quantidade de rádios associadas.
 - `GET /api/stations` — lista rádios ativas.
 - `POST /api/events` — registra eventos agregados de reprodução para rádios do catálogo próprio. Recebe `event_type` (`play`, `stop` ou `heartbeat`), `station_slug` e `session_id` UUID v4.
+- `GET /api/promotions?placement=home|explorar|radio` — lista somente campanhas ativas dentro da vigência, sem expor métricas administrativas.
+- `POST /api/promotions/:id/event` — soma impressão ou clique, sem registrar IP ou identificador individual.
 - Filtros de rádios: `q`, `category`, `state`, `city`, `limit` (máximo 100) e `offset`.
 
 Exemplos:
@@ -66,4 +79,4 @@ https://SEU-WORKER.workers.dev/api/stations?limit=20
 
 ## Painel administrativo
 
-O painel de cadastro/importação está em `/admin.html`. Ele exige o secret `ADMIN_TOKEN` configurado no Worker; sem esse secret as rotas administrativas permanecem bloqueadas. Consulte [ADMIN_SETUP.md](./ADMIN_SETUP.md) para publicar a API e configurar o secret. Nunca grave o token no HTML, no Git ou no D1.
+O painel `/admin.html` permite cadastrar campanhas patrocinadas como rascunho, definir posição e período, ativar ou pausar campanhas e consultar totais agregados de impressões e cliques. A ativação é manual; a API pública só retorna campanhas ativas e vigentes. O fluxo não processa pagamentos: a contratação e a confirmação são feitas diretamente com o anunciante. Ele exige o secret `ADMIN_TOKEN` configurado no Worker; sem esse secret as rotas administrativas permanecem bloqueadas. Consulte [ADMIN_SETUP.md](./ADMIN_SETUP.md) para publicar a API e configurar o secret. Nunca grave o token no HTML, no Git ou no D1.
