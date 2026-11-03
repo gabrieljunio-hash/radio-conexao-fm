@@ -72,6 +72,18 @@
       </form>
     </section>
     <section class="panel">
+      <h2>Patrocínios e divulgações</h2>
+      <p class="hint">Cadastre campanhas combinadas diretamente com anunciantes. Novas campanhas começam como rascunho e só aparecem no site quando forem ativadas e estiverem dentro do período definido.</p>
+      <form id="promotion-form">
+        <div class="row"><div><label>Nome do anunciante *</label><input name="advertiser_name" required maxlength="100"></div><div><label>Título da divulgação *</label><input name="title" required maxlength="100"></div></div>
+        <div class="row"><div><label>Descrição</label><input name="description" maxlength="240"></div><div><label>Imagem (URL opcional)</label><input name="image_url" type="url" placeholder="https://..."></div></div>
+        <div class="row"><div><label>Link de destino *</label><input name="destination_url" type="url" required placeholder="https://..."></div><div><label>Posição</label><select name="placement"><option value="home">Início</option><option value="explorar">Explorar</option><option value="radio">Página da rádio</option></select></div></div>
+        <div class="row"><div><label>Início *</label><input name="starts_at" type="datetime-local" required></div><div><label>Fim *</label><input name="ends_at" type="datetime-local" required></div></div>
+        <button type="submit">Salvar como rascunho</button>
+      </form>
+      <div id="promotion-list" style="margin-top:14px"></div>
+    </section>
+    <section class="panel">
       <h2>Rádios cadastradas</h2>
       <div class="row"><input id="station-search" placeholder="Buscar por nome, cidade ou slug"><button id="refresh" class="secondary fit" type="button">Atualizar</button></div>
       <div id="station-list"></div>
@@ -111,7 +123,7 @@
     const data = await api("/api/admin/summary");
     $("total").textContent = data.stations; $("active").textContent = data.active;
     $("verified").textContent = data.verified; $("categories").textContent = data.categories;
-    setConnected(true); await loadStations();
+    setConnected(true); await Promise.all([loadStations(), loadPromotions()]);
   }
   $("toggle-token").addEventListener("click", () => {
     const visible = $("token").type === "password";
@@ -204,6 +216,48 @@
       if(!data.stations.length)root.textContent="Nenhuma rádio encontrada.";
     }catch(err){show("global-message",err.message,"error");}
   }
+  async function loadPromotions(){
+    try{
+      const data=await api("/api/admin/promotions");
+      const root=$("promotion-list");root.replaceChildren();
+      for(const item of data.campaigns||[]){
+        const row=document.createElement("div");row.className="station";
+        const spacer=document.createElement("span");
+        const info=document.createElement("div");
+        const name=document.createElement("strong");name.textContent=item.title+" · "+item.advertiser_name;
+        const meta=document.createElement("small");meta.textContent=[item.placement,item.status,"Impressões: "+item.impressions,"Cliques: "+item.clicks,"Até "+new Date(item.ends_at).toLocaleString("pt-BR")].join(" • ");
+        info.append(name,meta);
+        const actions=document.createElement("div");actions.className="station-actions";
+        const toggle=document.createElement("button");toggle.type="button";
+        toggle.textContent=item.status==="active"?"Pausar":"Ativar";
+        toggle.className=item.status==="active"?"danger":"secondary";
+        toggle.addEventListener("click",async()=>{
+          toggle.disabled=true;
+          try{await api("/api/admin/promotions/"+item.id+"/status",{method:"POST",body:JSON.stringify({status:item.status==="active"?"paused":"active"})});await loadPromotions();}
+          catch(err){show("global-message",err.message,"error");toggle.disabled=false;}
+        });
+        actions.append(toggle);row.append(spacer,info,actions);root.append(row);
+      }
+      if(!(data.campaigns||[]).length)root.textContent="Nenhuma campanha cadastrada.";
+    }catch(err){show("global-message","Falha ao carregar patrocínios: "+err.message,"error");}
+  }
+  const promotionForm=$("promotion-form");
+  const localDateTime=(date)=>{const offset=date.getTimezoneOffset()*60000;return new Date(date.getTime()-offset).toISOString().slice(0,16);};
+  promotionForm.elements.starts_at.value=localDateTime(new Date());
+  promotionForm.elements.ends_at.value=localDateTime(new Date(Date.now()+7*86400000));
+  promotionForm.addEventListener("submit",async event=>{
+    event.preventDefault();
+    const form=new FormData(promotionForm),body=Object.fromEntries(form.entries());
+    body.starts_at=new Date(body.starts_at).toISOString();body.ends_at=new Date(body.ends_at).toISOString();
+    try{
+      const result=await api("/api/admin/promotions",{method:"POST",body:JSON.stringify(body)});
+      show("global-message","Campanha salva como rascunho. Revise e ative quando o pagamento e o material estiverem confirmados.","ok");
+      promotionForm.reset();
+      promotionForm.elements.starts_at.value=localDateTime(new Date());
+      promotionForm.elements.ends_at.value=localDateTime(new Date(Date.now()+7*86400000));
+      await loadPromotions();
+    }catch(err){show("global-message",err.message,"error");}
+  });
   $("refresh").addEventListener("click",loadStations);
   $("station-search").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();loadStations();}});
   if(token){connect().catch(()=>{token="";sessionStorage.removeItem("radioAdminToken");setConnected(false);});}
