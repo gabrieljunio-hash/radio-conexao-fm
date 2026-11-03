@@ -6,6 +6,28 @@ API inicial em Cloudflare Workers com D1. O arquivo de entrada é `src/index.js`
 
 No Worker `radio-conexao-api`, mantenha o binding D1 com o nome **DB** apontando para o banco **radio-conexao-db**.
 
+## Wrangler e Cloudflare Workers Builds
+
+A configuração do Worker fica em `api/wrangler.toml`; não existe configuração Wrangler na raiz do repositório.
+
+Para executar os comandos a partir da raiz do repositório, informe o caminho completo:
+
+```bash
+npx wrangler dev --config api/wrangler.toml
+npx wrangler preview --config api/wrangler.toml
+npx wrangler deploy --config api/wrangler.toml
+```
+
+No painel **Workers & Pages → radio-conexao-api → Settings → Builds**, configure o diretório raiz como `api`. Assim, comandos executados dentro do diretório do Worker encontram `wrangler.toml` e `src/index.js` sem duplicar a configuração na raiz.
+
+Se o diretório raiz precisar permanecer como a raiz do repositório, o comando de build/preview deve incluir explicitamente `--config api/wrangler.toml`. Não use apenas `wrangler preview`, pois isso faz o Wrangler procurar `./wrangler.toml` na raiz.
+
+O CI valida a configuração e o bundle sem publicar o Worker usando:
+
+```bash
+npx wrangler deploy --dry-run --config api/wrangler.toml
+```
+
 ## Publicação pelo painel Cloudflare
 
 1. Abra Workers & Pages e selecione `radio-conexao-api`.
@@ -41,7 +63,6 @@ https://SEU-WORKER.workers.dev/api/stations?limit=20
 - A API de estatísticas limita a consulta aos últimos 7 ou 30 dias.
 - O painel pode mostrar zeros até que existam reproduções registradas.
 - CORS permite o domínio Pages atual e o domínio GitHub Pages antigo.
-
 
 ## Painel administrativo
 
