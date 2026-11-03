@@ -386,7 +386,7 @@ async function handleAdmin(request, env, url, origin) {
     const startsAt = new Date(body?.starts_at || "");
     const endsAt = new Date(body?.ends_at || "");
     if (advertiser.length < 2 || title.length < 3 || !destinationUrl ||
-        !["home", "explorar", "radio"].includes(placement) ||
+        placement !== "home" ||
         !Number.isFinite(startsAt.getTime()) || !Number.isFinite(endsAt.getTime()) ||
         endsAt <= startsAt || (body?.image_url && !imageUrl)) {
       return adminJson({ error: "invalid_campaign_fields" }, 400, origin);
@@ -543,7 +543,7 @@ export default {
 
       if (url.pathname === "/api/promotions" && request.method === "GET") {
         const placement = String(url.searchParams.get("placement") || "home");
-        if (!["home", "explorar", "radio"].includes(placement)) {
+        if (placement !== "home") {
           return json({ error: "invalid_placement" }, 400, origin);
         }
         const result = await env.DB.prepare(
