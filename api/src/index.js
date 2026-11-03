@@ -566,7 +566,14 @@ export default {
         const result = await env.DB.prepare(
           "SELECT id, title, description, image_url, destination_url, advertiser_name, placement FROM sponsored_campaigns WHERE status = 'active' AND placement = ? AND datetime(starts_at) <= datetime('now') AND datetime(ends_at) > datetime('now') ORDER BY id DESC LIMIT 5"
         ).bind(placement).all();
-        return json({ campaigns: result.results || [] }, 200, origin);
+        return new Response(JSON.stringify({ campaigns: result.results || [] }), {
+          status: 200,
+          headers: {
+            "Content-Type": "application/json; charset=utf-8",
+            "Cache-Control": "no-store",
+            ...corsHeaders(origin),
+          },
+        });
       }
 
 
