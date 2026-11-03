@@ -3,10 +3,11 @@ name: Site tests
 on:
   push:
     branches:
-      - feature/home-recent-popular-stage1
+      - feature/monetization-stage5
   pull_request:
     branches:
       - main
+      - feature/home-recent-popular-stage1
   workflow_dispatch:
 
 concurrency:
