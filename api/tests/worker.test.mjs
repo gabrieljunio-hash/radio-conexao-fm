@@ -279,7 +279,7 @@ test("promotion event endpoint accepts only impressions and clicks", async () =>
   }};
   const response = await worker.fetch(
     new Request("https://api.example.com/api/promotions/7/event", {
-      method: "POST", headers: { "Content-Type": "application/json", Origin: ORIGIN },
+      method: "POST", headers: { "Content-Type": "application/json", Origin: ORIGIN, "CF-Connecting-IP": "203.0.113.11" },
       body: JSON.stringify({ event_type: "click" })
     }), { DB, PROMOTION_LIMITER: { async limit() { return { success: true }; } } }
   );
