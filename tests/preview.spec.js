@@ -142,3 +142,48 @@ test("Painel de audiência renderiza métricas e troca período", async ({ page 
   await expect.poll(() => requests).toContain("30d");
   await expect(page.getByRole("button", { name: "30 dias" })).toHaveAttribute("aria-pressed", "true");
 });
+
+test("Painel de audiência usa dados reais da API e mantém o gráfico correto nos dois períodos", async ({ page }) => {
+  const errors = [];
+  page.on("pageerror", error => errors.push(error.message));
+  await page.setViewportSize({ width: 390, height: 844 });
+
+  const sevenDayResponse = page.waitForResponse(response =>
+    response.url().includes("/api/stats?period=7d") && response.status() === 200
+  );
+  await page.goto("/audiencia.html");
+  const sevenDay = await sevenDayResponse;
+  const sevenDayData = await sevenDay.json();
+
+  expect(sevenDayData.period).toBe("7d");
+  expect(sevenDayData.summary).toMatchObject({
+    plays: expect.any(Number),
+    sessions: expect.any(Number),
+    stops: expect.any(Number),
+    heartbeats: expect.any(Number)
+  });
+  expect(Array.isArray(sevenDayData.daily)).toBeTruthy();
+  expect(Array.isArray(sevenDayData.top_stations)).toBeTruthy();
+  await expect(page.locator("#plays")).not.toHaveText("—");
+  await expect(page.locator("#chart .bar-wrap")).toHaveCount(7);
+
+  const thirtyDayResponse = page.waitForResponse(response =>
+    response.url().includes("/api/stats?period=30d") && response.status() === 200
+  );
+  await page.getByRole("button", { name: "30 dias" }).click();
+  const thirtyDay = await thirtyDayResponse;
+  const thirtyDayData = await thirtyDay.json();
+
+  expect(thirtyDayData.period).toBe("30d");
+  await expect(page.locator("#chart .bar-wrap")).toHaveCount(30);
+  await expect(page.getByRole("button", { name: "30 dias" })).toHaveAttribute("aria-pressed", "true");
+
+  const dimensions = await page.evaluate(() => ({
+    viewport: document.documentElement.clientWidth,
+    document: document.documentElement.scrollWidth,
+    body: document.body.scrollWidth
+  }));
+  expect(dimensions.document, "Painel ultrapassa o viewport: " + JSON.stringify(dimensions)).toBeLessThanOrEqual(dimensions.viewport + 1);
+  expect(dimensions.body, "Conteúdo ultrapassa o viewport: " + JSON.stringify(dimensions)).toBeLessThanOrEqual(dimensions.viewport + 1);
+  expect(errors).toEqual([]);
+});
