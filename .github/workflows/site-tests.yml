@@ -4,10 +4,12 @@ on:
   push:
     branches:
       - feature/monetization-stage5
+      - fix/universal-audience-tracking-stage5
   pull_request:
     branches:
       - main
       - feature/home-recent-popular-stage1
+      - integration/monetization-stage5-main
     types: [opened, synchronize, reopened]
   workflow_dispatch:
 
