@@ -224,7 +224,7 @@ test("todas as páginas públicas do sitemap respondem e possuem SEO básico", a
   expect(sitemapResponse.headers()["content-type"]).toMatch(/xml/i);
 
   const sitemap = await sitemapResponse.text();
-  const urls = [...sitemap.matchAll(/<loc>([^<]+)<\\/loc>/g)].map(match => match[1]);
+  const urls = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map(match => match[1]);
   expect(urls.length).toBeGreaterThan(0);
   expect(new Set(urls).size).toBe(urls.length);
 
