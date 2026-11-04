@@ -132,6 +132,8 @@ test("painel administrativo carrega bloqueado e não é indexável", async ({ pa
   await expect(page.getByRole("heading", { name: "Acesso protegido" })).toBeVisible();
   await expect(page.getByLabel("Token de acesso")).toHaveAttribute("type", "password");
   await expect(page.locator("#dashboard")).toBeHidden();
+  await expect(page.locator("#promotion-form")).toBeAttached();
+  await expect(page.locator("#promotion-form")).toBeHidden();
 });
 
 

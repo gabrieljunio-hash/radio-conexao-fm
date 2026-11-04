@@ -187,3 +187,44 @@ test("Painel de audiência usa dados reais da API e mantém o gráfico correto n
   expect(dimensions.body, "Conteúdo ultrapassa o viewport: " + JSON.stringify(dimensions)).toBeLessThanOrEqual(dimensions.viewport + 1);
   expect(errors).toEqual([]);
 });
+
+
+test("divulgação patrocinada aparece identificada e contabiliza impressão e clique", async ({ page }) => {
+  const events = [];
+  await page.route(API + "/api/promotions?placement=home", route => route.fulfill({
+    status: 200,
+    contentType: "application/json",
+    body: JSON.stringify({ campaigns: [{
+      id: 23, advertiser_name: "Comércio de teste", title: "Oferta patrocinada",
+      description: "Condição especial", image_url: "", destination_url: "https://example.com/oferta",
+      placement: "home"
+    }] })
+  }));
+  await page.route(API + "/api/promotions/23/event", async route => {
+    events.push(route.request().postDataJSON().event_type);
+    await route.fulfill({
+      status: 202, contentType: "application/json",
+      body: JSON.stringify({ ok: true, recorded: true })
+    });
+  });
+  await page.goto("/");
+  const section = page.locator("#sponsoredSection");
+  await expect(section).toBeVisible();
+  const card = page.locator('.sponsored-card[data-promo-id="23"]');
+  await expect(card).toContainText("Patrocinado");
+  await expect(card).toContainText("Oferta patrocinada");
+  await card.scrollIntoViewIfNeeded();
+  await expect.poll(() => events.filter(type => type === "impression").length).toBe(1);
+  const popup = page.waitForEvent("popup");
+  await card.click();
+  await popup;
+  await expect.poll(() => events.filter(type => type === "click").length).toBe(1);
+});
+
+test("se não houver campanha ativa, a área de patrocínio permanece oculta", async ({ page }) => {
+  await page.route(API + "/api/promotions?placement=home", route => route.fulfill({
+    status: 200, contentType: "application/json", body: JSON.stringify({ campaigns: [] })
+  }));
+  await page.goto("/");
+  await expect(page.locator("#sponsoredSection")).toBeHidden();
+});

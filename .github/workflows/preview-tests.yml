@@ -3,10 +3,11 @@ name: Preview browser tests
 on:
   push:
     branches:
-      - feature/home-recent-popular-stage1
+      - feature/monetization-stage5
   pull_request:
     branches:
       - main
+      - feature/home-recent-popular-stage1
     types: [opened, synchronize, reopened]
   workflow_dispatch:
 
@@ -25,7 +26,7 @@ jobs:
       - name: Wait for Cloudflare Pages Preview
         run: |
           for i in $(seq 1 30); do
-            if curl -fsS https://feature-home-recent-popular.radio-conexao-fm.pages.dev/ >/dev/null; then
+            if curl -fsS https://feature-monetization-stage5.radio-conexao-fm.pages.dev/ >/dev/null; then
               echo "Preview is responding"
               exit 0
             fi
@@ -43,11 +44,11 @@ jobs:
       - name: Install dependencies
         run: npm install --no-save @playwright/test
       - name: Install Chromium
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install chromium
       - name: Run tests against real Preview
         env:
           CI: true
-          PREVIEW_BASE_URL: https://feature-home-recent-popular.radio-conexao-fm.pages.dev
+          PREVIEW_BASE_URL: https://feature-monetization-stage5.radio-conexao-fm.pages.dev
         run: npx playwright test tests/preview.spec.js
       - name: Upload Preview test report
         if: always()
