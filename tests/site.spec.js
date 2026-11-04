@@ -240,3 +240,12 @@ test("todas as páginas públicas do sitemap respondem e possuem SEO básico", a
     await expect(page.locator('meta[name="robots"]')).not.toHaveAttribute("content", /noindex/i);
   }
 });
+
+test("rota antiga de explorar redireciona para a visualização correta e não entra no sitemap", async ({ page, request }) => {
+  await page.goto("/radios.html");
+  await expect(page).toHaveURL(/index\.html\?view=explorar/);
+  const canonical = await page.locator('link[rel="canonical"]').getAttribute("href");
+  expect(canonical).toBe("https://radio-conexao-fm.pages.dev/");
+  const sitemap = await (await request.get("/sitemap.xml")).text();
+  expect(sitemap).not.toContain("https://radio-conexao-fm.pages.dev/radios.html");
+});
