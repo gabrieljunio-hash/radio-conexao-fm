@@ -3,10 +3,12 @@ name: Site tests
 on:
   push:
     branches:
-      - feature/home-recent-popular-stage1
+      - feature/monetization-stage5
   pull_request:
     branches:
       - main
+      - feature/home-recent-popular-stage1
+    types: [opened, synchronize, reopened]
   workflow_dispatch:
 
 concurrency:
@@ -33,10 +35,12 @@ jobs:
         run: npx --yes wrangler@latest deploy --dry-run --config api/wrangler.toml
       - name: Validate full D1 import migration
         run: python3 tests/d1-migration.test.py
+      - name: Validate sponsored campaign migration
+        run: python3 tests/sponsored-campaigns-migration.test.py
       - name: Install test dependencies
         run: npm install --no-save @playwright/test
       - name: Install Chromium
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install chromium
       - name: Run browser tests
         run: npx playwright test tests/site.spec.js
       - name: Upload test report

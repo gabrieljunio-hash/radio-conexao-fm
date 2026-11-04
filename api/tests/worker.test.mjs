@@ -239,3 +239,139 @@ test("manual station creation cannot bypass the server-side audio test", async (
     globalThis.fetch = originalFetch;
   }
 });
+
+
+test("public promotions only query the requested placement", async () => {
+  const calls = [];
+  const DB = {
+    prepare(sql) {
+      return {
+        values: [],
+        bind(...values) { this.values = values; return this; },
+        async all() { calls.push({ sql, values: this.values }); return { results: [{ id: 7, title: "Patrocinador teste" }] }; }
+      };
+    }
+  };
+  const response = await worker.fetch(
+    new Request("https://api.example.com/api/promotions?placement=home", { headers: { Origin: ORIGIN } }),
+    { DB }
+  );
+  assert.equal(response.status, 200);
+  assert.deepEqual((await response.json()).campaigns, [{ id: 7, title: "Patrocinador teste" }]);
+  assert.deepEqual(calls[0].values, ["home"]);
+  assert.match(calls[0].sql, /status = 'active'/);
+  assert.match(calls[0].sql, /datetime\(ends_at\) > datetime\('now'\)/);
+});
+
+test("public promotions reject unknown placements", async () => {
+  const response = await worker.fetch(
+    new Request("https://api.example.com/api/promotions?placement=unknown"),
+    { DB: mockDb() }
+  );
+  assert.equal(response.status, 400);
+  assert.equal((await response.json()).error, "invalid_placement");
+});
+
+test("promotion event endpoint accepts only impressions and clicks", async () => {
+  const DB = { calls: [], prepare(sql) {
+    return { values: [], bind(...values) { this.values = values; return this; },
+      async run() { DB.calls.push({ sql, values: this.values }); return { meta: { changes: 1 } }; } };
+  }};
+  const response = await worker.fetch(
+    new Request("https://api.example.com/api/promotions/7/event", {
+      method: "POST", headers: { "Content-Type": "application/json", Origin: ORIGIN, "CF-Connecting-IP": "203.0.113.11" },
+      body: JSON.stringify({ event_type: "click" })
+    }), { DB, PROMOTION_LIMITER: { async limit() { return { success: true }; } } }
+  );
+  assert.equal(response.status, 202);
+  assert.deepEqual(await response.json(), { ok: true, recorded: true });
+  assert.match(DB.calls[0].sql, /clicks = clicks \+ 1/);
+  assert.deepEqual(DB.calls[0].values, [7]);
+});
+
+test("admin campaign creation is protected and always starts as draft", async () => {
+  const DB = { calls: [], prepare(sql) {
+    return { values: [], bind(...values) { this.values = values; return this; },
+      async run() { DB.calls.push({ sql, values: this.values }); return { meta: { last_row_id: 11 } }; } };
+  }};
+  const response = await worker.fetch(
+    new Request("https://api.example.com/api/admin/promotions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer test-secret-0123456789-abcdefghijklmnop", Origin: ORIGIN },
+      body: JSON.stringify({
+        advertiser_name: "Comércio local", title: "Oferta da semana",
+        description: "Promoção especial", destination_url: "https://example.com/oferta",
+        placement: "home", starts_at: "2026-11-01T00:00:00Z", ends_at: "2026-12-01T00:00:00Z"
+      })
+    }), { DB, ADMIN_TOKEN: "test-secret-0123456789-abcdefghijklmnop" }
+  );
+  assert.equal(response.status, 201);
+  assert.deepEqual(await response.json(), { ok: true, id: 11, status: "draft" });
+  assert.match(DB.calls[0].sql, /'draft'/);
+  assert.equal(DB.calls[0].values[0], "Comércio local");
+});
+
+test("admin campaign creation requires HTTPS destination links", async () => {
+  const DB = mockDb();
+  const response = await worker.fetch(
+    new Request("https://api.example.com/api/admin/promotions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer test-secret-0123456789-abcdefghijklmnop" },
+      body: JSON.stringify({
+        advertiser_name: "Loja", title: "Oferta", destination_url: "http://example.com/oferta",
+        starts_at: "2026-11-01T00:00:00Z", ends_at: "2026-12-01T00:00:00Z"
+      })
+    }), { DB, ADMIN_TOKEN: "test-secret-0123456789-abcdefghijklmnop" }
+  );
+  assert.equal(response.status, 400);
+  assert.equal((await response.json()).error, "invalid_campaign_fields");
+  assert.equal(DB.calls.length, 0);
+});
+
+test("admin campaign creation rejects unsafe URLs and invalid dates", async () => {
+  const DB = mockDb();
+  const response = await worker.fetch(
+    new Request("https://api.example.com/api/admin/promotions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer test-secret-0123456789-abcdefghijklmnop" },
+      body: JSON.stringify({
+        advertiser_name: "Loja", title: "Oferta", destination_url: "javascript:alert(1)",
+        starts_at: "2026-12-01T00:00:00Z", ends_at: "2026-11-01T00:00:00Z"
+      })
+    }), { DB, ADMIN_TOKEN: "test-secret-0123456789-abcdefghijklmnop" }
+  );
+  assert.equal(response.status, 400);
+  assert.equal((await response.json()).error, "invalid_campaign_fields");
+  assert.equal(DB.calls.length, 0);
+});
+
+
+test("promotion events are rate limited per source IP before touching D1", async () => {
+  let dbTouched = false;
+  const DB = { prepare() { dbTouched = true; throw new Error("D1 must not be called"); } };
+  const response = await worker.fetch(
+    new Request("https://api.example.com/api/promotions/7/event", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "CF-Connecting-IP": "203.0.113.10" },
+      body: JSON.stringify({ event_type: "impression" })
+    }),
+    { DB, PROMOTION_LIMITER: { async limit({ key }) { assert.equal(key, "203.0.113.10"); return { success: false }; } } }
+  );
+  assert.equal(response.status, 429);
+  assert.equal(response.headers.get("Retry-After"), "60");
+  assert.equal((await response.json()).error, "rate_limited");
+  assert.equal(dbTouched, false);
+});
+
+test("promotion events fail closed when the rate limiter cannot identify the source", async () => {
+  const response = await worker.fetch(
+    new Request("https://api.example.com/api/promotions/7/event", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ event_type: "impression" })
+    }),
+    { DB: mockDb(), PROMOTION_LIMITER: { async limit() { return { success: true }; } } }
+  );
+  assert.equal(response.status, 503);
+  assert.equal((await response.json()).error, "rate_limit_identity_unavailable");
+});
