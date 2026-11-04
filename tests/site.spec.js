@@ -10,6 +10,29 @@ test("página inicial abre sem erros fatais de JavaScript", async ({ page }) => 
   expect(pageErrors).toEqual([]);
 });
 
+test("player permanece montado ao abrir páginas internas e trocar de seção", async ({ page }) => {
+  await page.route("https://radio-conexao-api.bieljuniho.workers.dev/api/stats**", route =>
+    route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({
+      period: "7d", summary: { plays: 0, sessions: 0, stops: 0, heartbeats: 0 },
+      top_stations: [], daily: []
+    }) })
+  );
+  await page.goto("/");
+  await page.evaluate(() => { window.__persistentAudioNode = document.getElementById("audio"); });
+
+  await page.locator('a[href="audiencia.html"]').first().click();
+  await expect(page.locator("#persistentPageOverlay")).toBeVisible();
+  await expect(page.frameLocator("#persistentPageFrame").locator("h1")).toHaveText("Painel de audiência");
+  expect(await page.evaluate(() => window.__persistentAudioNode === document.getElementById("audio"))).toBeTruthy();
+
+  await page.locator("#persistentPageClose").click();
+  await expect(page.locator("#persistentPageOverlay")).toBeHidden();
+  await page.locator('.sidebar .nav a[href="radios.html"]').click();
+  await expect(page).toHaveURL(/radios\.html$/);
+  await expect(page.locator("#player")).toBeVisible();
+  expect(await page.evaluate(() => window.__persistentAudioNode === document.getElementById("audio"))).toBeTruthy();
+});
+
 test("páginas de explorar e favoritos mantêm a navegação", async ({ page }) => {
   await page.goto("/radios.html");
   await expect(page.locator("#exploreCategories")).toBeVisible();
