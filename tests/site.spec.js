@@ -216,3 +216,27 @@ test("início mostra somente histórico real e ranking por reproduções", async
   await expect(page.locator("#popularStations .popular-station")).toHaveCount(2);
   await expect(page.locator("#popularStations .popular-info").first()).toContainText("Rádio B");
 });
+
+
+test("todas as páginas públicas do sitemap respondem e possuem SEO básico", async ({ page, request }) => {
+  const sitemapResponse = await request.get("/sitemap.xml");
+  expect(sitemapResponse.status()).toBe(200);
+  expect(sitemapResponse.headers()["content-type"]).toMatch(/xml/i);
+
+  const sitemap = await sitemapResponse.text();
+  const urls = [...sitemap.matchAll(/<loc>([^<]+)<\\/loc>/g)].map(match => match[1]);
+  expect(urls.length).toBeGreaterThan(0);
+  expect(new Set(urls).size).toBe(urls.length);
+
+  for (const url of urls) {
+    const parsed = new URL(url);
+    expect(parsed.origin).toBe("https://radio-conexao-fm.pages.dev");
+    const path = parsed.pathname === "/" ? "/" : parsed.pathname;
+    const response = await page.goto(path);
+    expect(response && response.status(), `HTTP status for ${path}`).toBe(200);
+    await expect(page).toHaveTitle(/.+/);
+    await expect(page.locator('meta[name="description"]')).toHaveAttribute("content", /.+/);
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", url);
+    await expect(page.locator('meta[name="robots"]')).not.toHaveAttribute("content", /noindex/i);
+  }
+});
