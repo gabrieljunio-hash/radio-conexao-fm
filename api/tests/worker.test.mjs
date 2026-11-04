@@ -171,6 +171,7 @@ test("GET /api/stats returns aggregated metrics for the selected period", async 
   assert.equal(data.daily[0].plays, 8);
   assert.equal(calls.length, 3);
   assert.ok(calls.every(call => call.values[0] === "-30 days"));
+  assert.ok(calls.some(call => call.sql.includes("audience_events")), "stats must aggregate external radio events");
 });
 
 test("GET /api/stats defaults to 7 days and never returns session identifiers", async () => {
