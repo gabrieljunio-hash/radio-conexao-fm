@@ -96,7 +96,7 @@ test("POST /api/events rejects external stations without a valid identity and na
     session_id: SESSION
   });
   assert.equal(response.status, 400);
-  assert.equal((await response.json()).error, "invalid_external_station");
+  assert.equal((await response.json()).error, "invalid_station_slug");
 });
 
 test("POST /api/events rejects unknown stations", async () => {
