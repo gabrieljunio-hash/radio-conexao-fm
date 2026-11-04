@@ -17,6 +17,8 @@ function mockDb({ recentHeartbeat = null } = {}) {
         async first() {
           calls.push({ type: "first", sql, values: this.values });
           if (sql.includes("SELECT id FROM stations")) return { id: 24 };
+          if (sql.includes("SELECT id FROM audience_stations")) return { id: 42 };
+          if (sql.includes("SELECT id FROM audience_events")) return null;
           if (sql.includes("SELECT id FROM play_events")) return recentHeartbeat;
           if (sql.includes("SELECT 1 AS db_ok")) return { db_ok: 1 };
           return null;
@@ -66,6 +68,35 @@ test("POST /api/events records a valid catalog play without personal data", asyn
   assert.match(insert.sql, /INSERT INTO play_events/);
   assert.deepEqual(insert.values, [24, "play", SESSION]);
   assert.equal(insert.values.length, 3);
+});
+
+test("POST /api/events records Radio Browser stations outside the public catalog", async () => {
+  const DB = mockDb();
+  const response = await postEvent(DB, {
+    event_type: "play",
+    station_slug: "rb-570cc99a-9159-4d91-9a8f-96ddb5b30797",
+    station_name: "Rádio Mix",
+    station_logo: "https://example.test/logo.png",
+    session_id: SESSION
+  });
+  assert.equal(response.status, 201);
+  assert.deepEqual(await response.json(), { ok: true, recorded: true });
+  const register = DB.calls.find(call => call.type === "run" && call.sql.includes("INSERT INTO audience_stations"));
+  assert.deepEqual(register.values, ["rb-570cc99a-9159-4d91-9a8f-96ddb5b30797", "Rádio Mix", "https://example.test/logo.png"]);
+  const insert = DB.calls.find(call => call.type === "run" && call.sql.includes("INSERT INTO audience_events"));
+  assert.deepEqual(insert.values, [42, "play", SESSION]);
+});
+
+test("POST /api/events rejects external stations without a valid identity and name", async () => {
+  const DB = mockDb();
+  const response = await postEvent(DB, {
+    event_type: "play",
+    station_slug: "rb-",
+    station_name: "",
+    session_id: SESSION
+  });
+  assert.equal(response.status, 400);
+  assert.equal((await response.json()).error, "invalid_external_station");
 });
 
 test("POST /api/events rejects unknown stations", async () => {
@@ -119,7 +150,7 @@ test("GET /api/stats returns aggregated metrics for the selected period", async 
         },
         async all() {
           calls.push({ type: "all", sql: this.sql, values: this.values });
-          if (this.sql.includes("GROUP BY s.id")) {
+          if (this.sql.includes("GROUP BY slug, name, logo_url")) {
             return { results: [{ slug: "radio-teste", name: "Rádio Teste", logo_url: null, plays: 8, sessions: 4 }] };
           }
           return { results: [{ day: "2026-10-31", plays: 8, sessions: 4 }] };
