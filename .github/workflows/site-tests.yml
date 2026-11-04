@@ -3,7 +3,7 @@ name: Site tests
 on:
   push:
     branches:
-      - feature/platform-expansion-2026-10-29
+      - feature/home-recent-popular-stage1
   pull_request:
     branches:
       - main
@@ -19,7 +19,7 @@ permissions:
 jobs:
   playwright:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -29,6 +29,8 @@ jobs:
           node-version: 22
       - name: Test Worker API
         run: node --test api/tests/worker.test.mjs
+      - name: Validate Wrangler config and Worker bundle without deploying
+        run: npx --yes wrangler@latest deploy --dry-run --config api/wrangler.toml
       - name: Validate full D1 import migration
         run: python3 tests/d1-migration.test.py
       - name: Install test dependencies
