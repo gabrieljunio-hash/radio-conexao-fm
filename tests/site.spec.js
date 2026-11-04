@@ -33,6 +33,32 @@ test("player permanece montado ao abrir páginas internas e trocar de seção", 
   expect(await page.evaluate(() => window.__persistentAudioNode === document.getElementById("audio"))).toBeTruthy();
 });
 
+test("detalhes da rádio usam o player fixo sem criar outro áudio", async ({ page }) => {
+  await page.addInitScript(() => {
+    HTMLMediaElement.prototype.play = function () { return Promise.resolve(); };
+  });
+  await page.route("https://radio-conexao-api.bieljuniho.workers.dev/api/stations**", route =>
+    route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({
+      stations: [{
+        slug: "radio-teste", name: "Rádio Teste", stream_url: "https://stream.example.test/live",
+        logo_url: "", website_url: "", city: "Campinas", state: "SP",
+        description: "Estação de teste", categories: ["pop"]
+      }],
+      pagination: { total: 1, limit: 100, offset: 0, has_more: false }
+    }) })
+  );
+  await page.goto("/index.html?view=explorar");
+  await expect(page.locator('.station-detail-link[href*="radio-teste"]')).toBeVisible();
+  await page.evaluate(() => { window.__persistentAudioNode = document.getElementById("audio"); });
+  await page.locator('.station-detail-link[href*="radio-teste"]').click();
+  const detail = page.frameLocator("#persistentPageFrame");
+  await expect(detail.locator("#listen")).toBeVisible();
+  await detail.locator("#listen").click();
+  await expect(page.locator("#persistentPageOverlay")).toBeHidden();
+  await expect(page.locator("#playerName")).toHaveText("Rádio Teste");
+  expect(await page.evaluate(() => window.__persistentAudioNode === document.getElementById("audio"))).toBeTruthy();
+});
+
 test("páginas de explorar e favoritos mantêm a navegação", async ({ page }) => {
   await page.goto("/radios.html");
   await expect(page.locator("#exploreCategories")).toBeVisible();
