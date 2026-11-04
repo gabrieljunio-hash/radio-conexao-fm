@@ -453,29 +453,51 @@ export default {
       if (!["play", "stop", "heartbeat"].includes(eventType)) {
         return json({ error: "invalid_event_type" }, 400, origin);
       }
-      if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(stationSlug) || stationSlug.length > 100) {
+      if ((!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(stationSlug) && !/^rb-[A-Za-z0-9%_.!~*'()-]+$/.test(stationSlug)) || stationSlug.length > 100) {
         return json({ error: "invalid_station_slug" }, 400, origin);
       }
       if (!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(sessionId)) {
         return json({ error: "invalid_session_id" }, 400, origin);
       }
 
-      const station = await env.DB.prepare(
-        "SELECT id FROM stations WHERE slug = ? AND is_active = 1"
-      ).bind(stationSlug).first();
-      if (!station) return json({ error: "station_not_found" }, 404, origin);
-
-      if (eventType === "heartbeat") {
-        const recent = await env.DB.prepare(
-          "SELECT id FROM play_events WHERE station_id = ? AND session_id = ? AND event_type = 'heartbeat' AND occurred_at >= datetime('now', '-50 seconds') LIMIT 1"
-        ).bind(station.id, sessionId).first();
-        if (recent) return json({ ok: true, recorded: false }, 202, origin);
+      const isExternal = stationSlug.startsWith("rb-");
+      if (isExternal) {
+        const stationName = String(payload?.station_name || "").trim().slice(0, 120);
+        const logoUrl = payload?.station_logo ? safePublicUrl(payload.station_logo) : null;
+        if (!/^rb-[A-Za-z0-9%_.!~*'()-]{1,100}$/.test(stationSlug) || stationName.length < 2) {
+          return json({ error: "invalid_external_station" }, 400, origin);
+        }
+        await env.DB.prepare(
+          "INSERT INTO audience_stations (station_key, name, logo_url) VALUES (?, ?, ?) ON CONFLICT(station_key) DO UPDATE SET name = excluded.name, logo_url = COALESCE(excluded.logo_url, audience_stations.logo_url)"
+        ).bind(stationSlug, stationName, logoUrl).run();
+        const station = await env.DB.prepare(
+          "SELECT id FROM audience_stations WHERE station_key = ?"
+        ).bind(stationSlug).first();
+        if (!station) return json({ error: "station_not_found" }, 404, origin);
+        if (eventType === "heartbeat") {
+          const recent = await env.DB.prepare(
+            "SELECT id FROM audience_events WHERE station_id = ? AND session_id = ? AND event_type = 'heartbeat' AND occurred_at >= datetime('now', '-50 seconds') LIMIT 1"
+          ).bind(station.id, sessionId).first();
+          if (recent) return json({ ok: true, recorded: false }, 202, origin);
+        }
+        await env.DB.prepare(
+          "INSERT INTO audience_events (station_id, event_type, session_id) VALUES (?, ?, ?)"
+        ).bind(station.id, eventType, sessionId).run();
+      } else {
+        const station = await env.DB.prepare(
+          "SELECT id FROM stations WHERE slug = ? AND is_active = 1"
+        ).bind(stationSlug).first();
+        if (!station) return json({ error: "station_not_found" }, 404, origin);
+        if (eventType === "heartbeat") {
+          const recent = await env.DB.prepare(
+            "SELECT id FROM play_events WHERE station_id = ? AND session_id = ? AND event_type = 'heartbeat' AND occurred_at >= datetime('now', '-50 seconds') LIMIT 1"
+          ).bind(station.id, sessionId).first();
+          if (recent) return json({ ok: true, recorded: false }, 202, origin);
+        }
+        await env.DB.prepare(
+          "INSERT INTO play_events (station_id, event_type, session_id) VALUES (?, ?, ?)"
+        ).bind(station.id, eventType, sessionId).run();
       }
-
-      await env.DB.prepare(
-        "INSERT INTO play_events (station_id, event_type, session_id) VALUES (?, ?, ?)"
-      ).bind(station.id, eventType, sessionId).run();
-
       return json({ ok: true, recorded: true }, 201, origin);
     }
 
@@ -538,25 +560,38 @@ export default {
                COUNT(DISTINCT CASE WHEN event_type = 'play' THEN session_id END) AS sessions,
                SUM(CASE WHEN event_type = 'stop' THEN 1 ELSE 0 END) AS stops,
                SUM(CASE WHEN event_type = 'heartbeat' THEN 1 ELSE 0 END) AS heartbeats
-             FROM play_events WHERE occurred_at >= ${since}`
+             FROM (
+               SELECT event_type, session_id, occurred_at FROM play_events
+               UNION ALL
+               SELECT event_type, session_id, occurred_at FROM audience_events
+             ) WHERE occurred_at >= ${since}`
           ).bind(modifier).first(),
           env.DB.prepare(
-            `SELECT s.slug, s.name, s.logo_url,
-                    SUM(CASE WHEN e.event_type = 'play' THEN 1 ELSE 0 END) AS plays,
-                    COUNT(DISTINCT CASE WHEN e.event_type = 'play' THEN e.session_id END) AS sessions
-             FROM play_events e
-             JOIN stations s ON s.id = e.station_id
-             WHERE e.occurred_at >= ${since} AND s.is_active = 1
-             GROUP BY s.id, s.slug, s.name, s.logo_url
-             HAVING SUM(CASE WHEN e.event_type = 'play' THEN 1 ELSE 0 END) > 0
-             ORDER BY plays DESC, sessions DESC, s.name COLLATE NOCASE
+            `SELECT slug, name, logo_url,
+                    SUM(CASE WHEN event_type = 'play' THEN 1 ELSE 0 END) AS plays,
+                    COUNT(DISTINCT CASE WHEN event_type = 'play' THEN session_id END) AS sessions
+             FROM (
+               SELECT s.slug, s.name, s.logo_url, e.event_type, e.session_id, e.occurred_at
+               FROM play_events e JOIN stations s ON s.id = e.station_id WHERE s.is_active = 1
+               UNION ALL
+               SELECT a.station_key AS slug, a.name, a.logo_url, e.event_type, e.session_id, e.occurred_at
+               FROM audience_events e JOIN audience_stations a ON a.id = e.station_id
+             )
+             WHERE occurred_at >= ${since}
+             GROUP BY slug, name, logo_url
+             HAVING SUM(CASE WHEN event_type = 'play' THEN 1 ELSE 0 END) > 0
+             ORDER BY plays DESC, sessions DESC, name COLLATE NOCASE
              LIMIT 10`
           ).bind(modifier).all(),
           env.DB.prepare(
             `SELECT date(occurred_at) AS day,
                     SUM(CASE WHEN event_type = 'play' THEN 1 ELSE 0 END) AS plays,
                     COUNT(DISTINCT CASE WHEN event_type = 'play' THEN session_id END) AS sessions
-             FROM play_events
+             FROM (
+               SELECT event_type, session_id, occurred_at FROM play_events
+               UNION ALL
+               SELECT event_type, session_id, occurred_at FROM audience_events
+             )
              WHERE occurred_at >= ${since}
              GROUP BY date(occurred_at)
              ORDER BY day ASC`
