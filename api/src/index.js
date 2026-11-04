@@ -453,7 +453,7 @@ export default {
       if (!["play", "stop", "heartbeat"].includes(eventType)) {
         return json({ error: "invalid_event_type" }, 400, origin);
       }
-      if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(stationSlug) || stationSlug.length > 100) {
+      if ((!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(stationSlug) && !/^rb-[A-Za-z0-9%_-]+$/.test(stationSlug)) || stationSlug.length > 100) {
         return json({ error: "invalid_station_slug" }, 400, origin);
       }
       if (!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(sessionId)) {
@@ -464,7 +464,7 @@ export default {
       if (isExternal) {
         const stationName = String(payload?.station_name || "").trim().slice(0, 120);
         const logoUrl = payload?.station_logo ? safePublicUrl(payload.station_logo) : null;
-        if (!/^rb-[a-z0-9%_-]{1,100}$/.test(stationSlug) || stationName.length < 2) {
+        if (!/^rb-[A-Za-z0-9%_-]{1,100}$/.test(stationSlug) || stationName.length < 2) {
           return json({ error: "invalid_external_station" }, 400, origin);
         }
         await env.DB.prepare(
