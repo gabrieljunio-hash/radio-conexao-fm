@@ -263,13 +263,18 @@ function getAudienceSessionId(){
  return audienceSessionId;
 }
 function sendAudienceEvent(eventType,slug=trackedAudienceSlug){
- if(!slug||!/^db-[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug))return;
- const payload={event_type:eventType,station_slug:slug.slice(3),session_id:getAudienceSessionId()};
- fetch("https://radio-conexao-api.bieljuniho.workers.dev/api/events",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload),keepalive:eventType==="stop"}).catch(()=>{});
+ if(!slug)return;
+ const isExternal=slug.startsWith("rb-");
+ if(!isExternal&&!/^db-[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug))return;
+ const payload={event_type:eventType,station_slug:isExternal?slug:slug.slice(3),session_id:getAudienceSessionId()};
+ if(isExternal&&current?.id===slug){payload.station_name=current.name;payload.station_logo=current.favicon||""}
+ fetch("https://radio-conexao-api.bieljuniho.workers.dev/api/events",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload),keepalive:eventType==="stop"})
+  .then(async response=>{if(!response.ok){const detail=await response.text().catch(()=>"");console.warn("Falha ao registrar audiência:",response.status,detail.slice(0,200))}})
+  .catch(error=>console.warn("Falha de conexão ao registrar audiência:",error));
 }
 function startAudienceTracking(){
  const slug=current?.id||"";
- if(!slug.startsWith("db-")){stopAudienceTracking();return}
+ if(!slug.startsWith("db-")&&!slug.startsWith("rb-")){stopAudienceTracking();return}
  if(trackedAudienceSlug!==slug){stopAudienceTracking();trackedAudienceSlug=slug;sendAudienceEvent("play",slug)}
 }
 function stopAudienceTracking(){
