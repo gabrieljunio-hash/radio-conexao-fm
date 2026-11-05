@@ -36,13 +36,12 @@ jobs:
         run: node --test scripts/*.test.mjs
 
   generate:
-    if: github.event_name != 'pull_request'
     needs: tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: main
+          ref: ${{ github.head_ref || 'main' }}
           token: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions/setup-node@v4
         with:
@@ -58,5 +57,5 @@ jobs:
             echo "Nenhuma página nova ou alterada."
           else
             git commit -m "chore: refresh static radio SEO pages"
-            git push origin main
+            git push origin "${GITHUB_HEAD_REF:-main}"
           fi
