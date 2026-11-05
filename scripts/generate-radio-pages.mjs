@@ -18,8 +18,8 @@ function safeHttps(value) {
     const url = new URL(String(value || ""));
     const host = url.hostname.toLowerCase();
     if (url.protocol !== "https:" || !host || host === "localhost" || host.endsWith(".localhost") || host.endsWith(".local")) return "";
-    if (/^(127\\.|10\\.|192\\.168\\.|169\\.254\\.)/.test(host) || /^172\\.(1[6-9]|2\\d|3[01])\\./.test(host) || /^\\[?(::1|fc|fd|fe80:)/i.test(host)) return "";
-    if (/^\\d{1,3}(?:\\.\\d{1,3}){3}$/.test(host)) return "";
+    if (/^(127\.|10\.|192\.168\.|169\.254\.)/.test(host) || /^172\.(1[6-9]|2\d|3[01])\./.test(host) || /^\[?(::1|fc|fd|fe80:)/i.test(host)) return "";
+    if (/^\d{1,3}(?:\.\d{1,3}){3}$/.test(host)) return "";
     return url.href;
   } catch {
     return "";
