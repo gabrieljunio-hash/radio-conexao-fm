@@ -302,20 +302,28 @@ function getAudienceSessionId(){
  }
  return audienceSessionId;
 }
+function audienceKeyForStation(station){
+ if(!station)return "";
+ const id=String(station.id||"");
+ if(id.startsWith("db-")||id.startsWith("rb-"))return id;
+ // Stations shipped in the original static catalog have no db-/rb- prefix.
+ // Count only playable stations and namespace them in the external audience table.
+ return station.streamUrl&&/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(id)?"rb-legacy-"+id:"";
+}
 function sendAudienceEvent(eventType,slug=trackedAudienceSlug){
  if(!slug)return;
- const isExternal=slug.startsWith("rb-");
+ const isExternal=slug.startsWith("rb-")||slug.startsWith("legacy-");
  if(!isExternal&&!/^db-[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug))return;
  const payload={event_type:eventType,station_slug:isExternal?slug:slug.slice(3),session_id:getAudienceSessionId()};
- const station=current?.id===slug?current:trackedAudienceStation?.id===slug?trackedAudienceStation:null;
+ const station=current?.id===slug?current:trackedAudienceStation;
  if(isExternal&&station){payload.station_name=station.name;payload.station_logo=station.favicon||""}
  fetch("https://radio-conexao-api.bieljuniho.workers.dev/api/events",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload),keepalive:eventType==="stop"})
   .then(async response=>{if(!response.ok){const detail=await response.text().catch(()=>"");console.warn("Falha ao registrar audiência:",response.status,detail.slice(0,200))}})
   .catch(error=>console.warn("Falha de conexão ao registrar audiência:",error));
 }
 function startAudienceTracking(){
- const slug=current?.id||"";
- if(!slug.startsWith("db-")&&!slug.startsWith("rb-")){stopAudienceTracking();return}
+ const slug=audienceKeyForStation(current);
+ if(!slug){stopAudienceTracking();return}
  if(trackedAudienceSlug!==slug){stopAudienceTracking();trackedAudienceSlug=slug;trackedAudienceStation=current;sendAudienceEvent("play",slug)}
 }
 function stopAudienceTracking(){

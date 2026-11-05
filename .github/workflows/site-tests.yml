@@ -42,7 +42,7 @@ jobs:
       - name: Validate external audience migration
         run: python3 tests/external-audience-migration.test.py
       - name: Install test dependencies
-        run: npm install --no-save @playwright/test
+        run: npm install --no-save @playwright/test@1.56.1
       - name: Install Chromium
         run: npx playwright install chromium
       - name: Run browser tests
