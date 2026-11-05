@@ -23,7 +23,7 @@ function safeHttps(value) {
 }
 
 function decodeEntities(value = "") {
-  return String(value).replace(/&(#x[0-9a-f]+|#\\d+|amp|quot|apos|lt|gt|nbsp);/gi, (match, entity) => {
+  return String(value).replace(/&(#x[0-9a-f]+|#\d+|amp|quot|apos|lt|gt|nbsp);/gi, (match, entity) => {
     const key = entity.toLowerCase();
     if (key === "amp") return "&";
     if (key === "quot") return '"';
@@ -37,38 +37,25 @@ function decodeEntities(value = "") {
 }
 
 function cleanText(value, max = 500) {
-  return decodeEntities(String(value || "").replace(/<[^>]*>/g, " ").replace(/\\s+/g, " ").trim())
-    .replace(/[|•·]+/g, " ").replace(/\\s+/g, " ").trim().slice(0, max);
+  return decodeEntities(String(value || "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim())
+    .replace(/[|•·]+/g, " ").replace(/\s+/g, " ").trim().slice(0, max);
 }
 
 function getMeta(html, keys) {
-  for (const key of keys) {
-    const escaped = key.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\function safeHttps(value) {
-  try {
-    const url = new URL(String(value || ""));
-    return url.protocol === "https:" ? url.href : "";
-  } catch {
-    return "";
-  }
-}
-");
-    const patterns = [
-      new RegExp('<meta[^>]+(?:name|property)=["\\']' + escaped + '["\\'][^>]+content=["\\']([^"\\']+)', "i"),
-      new RegExp('<meta[^>]+content=["\\']([^"\\']+)["\\'][^>]+(?:name|property)=["\\']' + escaped + '["\\']', "i")
-    ];
-    for (const pattern of patterns) {
-      const match = html.match(pattern);
-      if (match?.[1]) return cleanText(match[1], 500);
-    }
+  for (const match of html.matchAll(/<meta\b[^>]*>/gi)) {
+    const tag = match[0];
+    const name = (tag.match(/\b(?:name|property)\s*=\s*["']([^"']+)["']/i) || [])[1] || "";
+    const content = (tag.match(/\bcontent\s*=\s*["']([^"']*)["']/i) || [])[1] || "";
+    if (keys.some(key => name.toLowerCase() === key.toLowerCase()) && content) return cleanText(content, 500);
   }
   return "";
 }
 
 function jsonLdObjects(html) {
   const objects = [];
-  for (const match of html.matchAll(/<script[^>]+type=["']application\\/ld\\+json["'][^>]*>([\\s\\S]*?)<\\/script>/gi)) {
+  for (const match of html.matchAll(/<script\b[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi)) {
     try {
-      const parsed = JSON.parse(decodeEntities(match[1]));
+      const parsed = JSON.parse(match[1].replace(/^\s*<!--|-->\s*$/g, ""));
       const visit = value => {
         if (!value || typeof value !== "object") return;
         if (Array.isArray(value)) return value.forEach(visit);
@@ -90,7 +77,7 @@ function extractOfficialFacts(html) {
     : "";
   const description = getMeta(html, ["description", "og:description", "twitter:description"])
     || cleanText(radio.description, 500);
-  const title = getMeta(html, ["og:site_name"]) || cleanText((html.match(/<title[^>]*>([\\s\\S]*?)<\\/title>/i) || [])[1], 140);
+  const title = getMeta(html, ["og:site_name"]) || cleanText((html.match(/<title[^>]*>([\s\S]*?)<\/title>/i) || [])[1], 140);
   const slogan = cleanText(radio.slogan || radio.alternateName, 160);
   const founded = cleanText(radio.foundingDate, 40);
   const telephone = cleanText(radio.telephone, 50);
@@ -101,7 +88,7 @@ function extractOfficialFacts(html) {
 
 function findAboutLinks(html, baseUrl) {
   const links = [];
-  for (const match of html.matchAll(/<a\\b[^>]*href=["']([^"']+)["'][^>]*>([\\s\\S]*?)<\\/a>/gi)) {
+  for (const match of html.matchAll(/<a\b[^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi)) {
     const label = cleanText(match[2], 100);
     if (!/(sobre|about|a-r[aá]dio|quem somos|hist[oó]ria|institucional)/i.test(label + " " + match[1])) continue;
     try {
@@ -124,7 +111,7 @@ async function fetchOfficialPage(url, fetchImpl) {
       redirect: "follow",
       signal: AbortSignal.timeout(7000)
     });
-    if (!response.ok || !/text\\/html|application\\/xhtml\\+xml/i.test(response.headers.get("content-type") || "")) return null;
+    if (!response.ok || !/text\/html|application\/xhtml\+xml/i.test(response.headers.get("content-type") || "")) return null;
     const finalUrl = new URL(response.url || target.href);
     if (finalUrl.protocol !== "https:" || finalUrl.hostname !== target.hostname) return null;
     const html = await response.text();
