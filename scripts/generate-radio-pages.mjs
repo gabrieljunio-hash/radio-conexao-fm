@@ -97,7 +97,7 @@ ${website ? `<a class="website" href="${escapeHtml(website)}" target="_blank" re
 }
 
 export function buildSitemap(existingXml, stations) {
-  const base = existingXml.match(/<url>[\\s\\S]*?<\\/url>/g) || [];
+  const base = existingXml.match(/<url>[\s\S]*?<\/url>/g) || [];
   const kept = base.filter(entry => !entry.includes("/radio/"));
   const stationUrls = stations.map(station =>
     `  <url><loc>${SITE}/radio/${station.slug}/</loc></url>`
