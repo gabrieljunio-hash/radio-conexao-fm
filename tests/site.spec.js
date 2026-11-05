@@ -273,3 +273,76 @@ test("página Anuncie está incluída no sitemap e acessível pelo início", asy
   await page.goto("/");
   await expect(page.getByRole("link", { name: "Anuncie" })).toHaveAttribute("href", "anuncie.html");
 });
+
+
+test("explorar combina país, idioma e gênero, mostra bandeira e carrega mais resultados", async ({ page }) => {
+  const stationRequests = [];
+  await page.route("https://radio-conexao-api.bieljuniho.workers.dev/api/catalog/filters", route => route.fulfill({
+    status: 200, contentType: "application/json", body: JSON.stringify({
+      countries: [{ code: "BR", station_count: 10 }],
+      languages: [{ code: "pt-BR", station_count: 10 }],
+      regions: [], cities: [],
+      categories: [{ slug: "rock", name: "Rock", station_count: 4 }]
+    })
+  }));
+  await page.route("https://de1.api.radio-browser.info/json/countries**", route => route.fulfill({
+    status: 200, contentType: "application/json", body: JSON.stringify([
+      { iso_3166_1: "US", name: "United States", stationcount: 1000 },
+      { iso_3166_1: "BR", name: "Brazil", stationcount: 500 }
+    ])
+  }));
+  await page.route("https://de1.api.radio-browser.info/json/languages**", route => route.fulfill({
+    status: 200, contentType: "application/json", body: JSON.stringify([
+      { iso_639: "en", name: "english", stationcount: 1000 },
+      { iso_639: "pt", name: "portuguese", stationcount: 500 }
+    ])
+  }));
+  await page.route("https://de1.api.radio-browser.info/json/stations/search**", route => route.fulfill({
+    status: 200, contentType: "application/json", body: JSON.stringify([{
+      stationuuid: "radio-us-test", name: "New York Rock Radio",
+      url_resolved: "https://stream.example.test/us-rock", countrycode: "US",
+      country: "United States", language: "english", state: "New York",
+      tags: "rock", favicon: "", lastcheckok: 1, bitrate: 128
+    }])
+  }));
+  await page.route("https://radio-conexao-api.bieljuniho.workers.dev/api/stations**", route => {
+    const url = new URL(route.request().url());
+    stationRequests.push(url);
+    const offset = Number(url.searchParams.get("offset") || 0);
+    const filtered = url.searchParams.get("country_code") === "US";
+    route.fulfill({
+      status: 200, contentType: "application/json", body: JSON.stringify({
+        stations: filtered && offset === 0 ? [{
+          slug: "radio-rock-us", name: "Rock USA FM",
+          stream_url: "https://stream.example.test/db-us", logo_url: "",
+          country_code: "US", state: "New York", city: "New York",
+          language: "en-US", description: "Rock", is_verified: 1,
+          categories: ["rock"]
+        }] : offset === 24 ? [{
+          slug: "radio-rock-us-2", name: "Rock USA FM 2",
+          stream_url: "https://stream.example.test/db-us-2", logo_url: "",
+          country_code: "US", state: "New York", city: "Buffalo",
+          language: "en-US", description: "Rock", is_verified: 0,
+          categories: ["rock"]
+        }] : [],
+        pagination: { total: filtered ? 25 : 0, limit: 24, offset, has_more: filtered && offset === 0 }
+      })
+    });
+  });
+  await page.goto("/index.html?view=explorar");
+  await expect(page.locator("#countryFilter option[value='US']")).toHaveText(/United States/);
+  await page.locator("#countryFilter").selectOption("US");
+  await page.locator("#languageFilter").selectOption("en");
+  await page.locator("#genreFilter").selectOption("rock");
+  await expect.poll(() => stationRequests.some(url =>
+    url.searchParams.get("country_code") === "US" &&
+    url.searchParams.get("language") === "en" &&
+    url.searchParams.get("category") === "rock"
+  )).toBeTruthy();
+  await expect(page.locator("#stations")).toContainText("Rock USA FM");
+  await expect(page.locator(".catalog-country").first()).toContainText("United States");
+  await expect(page.locator("#loadMoreCatalog")).toBeVisible();
+  await page.locator("#loadMoreCatalog").click();
+  await expect.poll(() => stationRequests.some(url => url.searchParams.get("offset") === "24")).toBeTruthy();
+  await expect(page.locator("#stations")).toContainText("Rock USA FM 2");
+});
