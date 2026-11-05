@@ -74,8 +74,8 @@ async function findStation(){
   const stations=Array.isArray(data.stations)?data.stations:[];
   const station=stations.find(item=>String(item.slug)===slug);
   if(station)return station;
-  if(!data.pagination?.has_more||stations.length===0)break;
-  offset+=stations.length;
+  if(!data.pagination?.has_more)break;
+  offset+=stations.length||Number(data.pagination?.limit||100);
  }
  throw new Error("A emissora não está cadastrada no catálogo.");
 }
