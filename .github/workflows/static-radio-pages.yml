@@ -1,6 +1,12 @@
 name: Generate static radio SEO pages
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - "index.html"
+      - "scripts/generate-radio-pages.mjs"
+      - ".github/workflows/static-radio-pages.yml"
   workflow_dispatch:
   schedule:
     - cron: "17 */6 * * *"
