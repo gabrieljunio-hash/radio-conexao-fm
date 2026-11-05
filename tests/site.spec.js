@@ -65,6 +65,49 @@ test("detalhes da rádio usam o player fixo sem criar outro áudio", async ({ pa
   expect(await page.evaluate(() => window.__persistentAudioNode === document.getElementById("audio"))).toBeTruthy();
 });
 
+
+test("página individual encontra rádios depois das primeiras 100", async ({ page }) => {
+  const offsets = [];
+  await page.route("https://radio-conexao-api.bieljuniho.workers.dev/api/stations**", async route => {
+    const url = new URL(route.request().url());
+    const offset = Number(url.searchParams.get("offset") || 0);
+    offsets.push(offset);
+    if (offset === 0) {
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({
+        stations: [],
+        pagination: { total: 101, limit: 100, offset: 0, has_more: true }
+      }) });
+      return;
+    }
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({
+      stations: [{
+        slug: "radio-posicao-101", name: "Rádio da Posição 101",
+        stream_url: "https://stream.example.test/live", logo_url: "",
+        website_url: "", city: "Campinas", state: "SP",
+        description: "Estação de teste", categories: ["pop"]
+      }],
+      pagination: { total: 101, limit: 100, offset: 100, has_more: false }
+    }) });
+  });
+  await page.goto("/radio.html?station=radio-posicao-101");
+  await expect(page.locator("#radioCard h1")).toHaveText("Rádio da Posição 101");
+  expect(offsets).toEqual([0, 100]);
+});
+
+
+test("página HTML individual entrega SEO sem depender de JavaScript", async ({ page }) => {
+  await page.goto("/radio/rb-f509ca0d-b4fd-44fa-bf88-5a20ddbc7e2d/", { waitUntil: "domcontentloaded" });
+  await expect(page.locator("h1")).toHaveText("012 Rock News");
+  await expect(page).toHaveTitle(/012 Rock News ao vivo/);
+  await expect(page.locator('meta[name="description"]')).toHaveAttribute("content", /012 Rock News/);
+  await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
+    "href",
+    "https://radio-conexao-fm.pages.dev/radio/rb-f509ca0d-b4fd-44fa-bf88-5a20ddbc7e2d/"
+  );
+  const structuredData = await page.locator('script[type="application/ld+json"]').evaluate(element => element.textContent);
+  expect(structuredData).toContain("RadioStation");
+});
+
 test("páginas de explorar e favoritos mantêm a navegação", async ({ page }) => {
   await page.goto("/radios.html");
   await expect(page.locator("#exploreCategories")).toBeVisible();
@@ -238,12 +281,14 @@ test("todas as páginas públicas do sitemap respondem e possuem SEO básico", a
     const parsed = new URL(url);
     expect(parsed.origin).toBe("https://radio-conexao-fm.pages.dev");
     const path = parsed.pathname === "/" ? "/" : parsed.pathname;
-    const response = await page.goto(path);
-    expect(response && response.status(), `HTTP status for ${path}`).toBe(200);
-    await expect(page).toHaveTitle(/.+/);
-    await expect(page.locator('meta[name="description"]')).toHaveAttribute("content", /.+/);
-    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", url);
-    await expect(page.locator('meta[name="robots"]')).not.toHaveAttribute("content", /noindex/i);
+    const response = await request.get(path);
+    expect(response.status(), `HTTP status for ${path}`).toBe(200);
+    const html = await response.text();
+    expect(html).toContain("<title>");
+    expect(html).toContain("</title>");
+    expect(html).toMatch(/<meta[^>]+name=["']description["'][^>]+content=["'][^"']+["']/i);
+    expect(html).toContain(`<link rel="canonical" href="${url}"`);
+    expect(html).not.toMatch(/<meta[^>]+name=["']robots["'][^>]+content=["'][^"']*noindex/i);
   }
 });
 
@@ -375,4 +420,41 @@ test("rádios sem logotipo exibem arte neutra em vez de capa vazia", async ({ pa
   await expect(station).toBeVisible();
   await expect(station.locator(".cover-fallback")).toBeVisible();
   await expect(station.locator(".station-logo")).toHaveCount(0);
+});
+
+
+test("link da página SEO abre a rádio no player fixo mesmo fora das primeiras 24", async ({ page }) => {
+  await page.addInitScript(() => {
+    HTMLMediaElement.prototype.play = function () { return Promise.resolve(); };
+  });
+  await page.route("**/data/radio-status.json", route => route.fulfill({
+    status: 200, contentType: "application/json", body: JSON.stringify({ stations: [] })
+  }));
+  const requests = [];
+  await page.route("https://radio-conexao-api.bieljuniho.workers.dev/api/stations**", async route => {
+    const url = new URL(route.request().url());
+    const limit = Number(url.searchParams.get("limit") || 24);
+    const offset = Number(url.searchParams.get("offset") || 0);
+    requests.push({ limit, offset });
+    const station = (slug, name) => ({
+      slug, name, stream_url: "https://stream.example.test/live",
+      logo_url: "", website_url: "", city: "Campinas", state: "SP",
+      description: "Rádio usada no teste", categories: ["pop"]
+    });
+    if (limit === 24) {
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({
+        stations: [station("outra-radio", "Outra Rádio")],
+        pagination: { total: 101, limit: 24, offset: 0, has_more: true }
+      }) });
+      return;
+    }
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({
+      stations: [station("radio-detalhe", "Rádio do Detalhe")],
+      pagination: { total: 101, limit: 100, offset, has_more: false }
+    }) });
+  });
+  await page.goto("/?station=db-radio-detalhe&autoplay=1");
+  await expect(page.locator("#playerName")).toHaveText("Rádio do Detalhe");
+  await expect(page.locator("#audio")).toHaveAttribute("src", "https://stream.example.test/live");
+  expect(requests.some(item => item.limit === 100 && item.offset === 0)).toBeTruthy();
 });
