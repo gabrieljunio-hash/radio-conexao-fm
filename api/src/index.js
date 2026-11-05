@@ -685,8 +685,9 @@ export default {
           bindings.push(countryCode);
         }
         if (language) {
-          conditions.push("lower(s.language) = ?");
-          bindings.push(language);
+          conditions.push("lower(s.language) LIKE ?");
+          const languagePrefix = ({ portuguese: "pt", english: "en", spanish: "es", french: "fr", german: "de", italian: "it" })[language] || language.split("-")[0];
+          bindings.push(languagePrefix + "%");
         }
         if (state) {
           conditions.push("lower(s.state) = lower(?)");
