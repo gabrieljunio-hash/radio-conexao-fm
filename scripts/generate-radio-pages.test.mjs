@@ -107,12 +107,12 @@ test("não consulta rádios que já possuem descrição completa e localização
 });
 
 test("não aceita redirecionamento para outro domínio como fonte oficial", async () => {
-  const result = await enrichStation({ ...station, description: "", website_url: "https://radio.example/" }, async url => {
-    return new Response("<html><head><meta name=\\"description\\" content=\\"Descrição falsa suficientemente longa para ser usada.\\"></head></html>", {
-      status: 200,
-      headers: { "content-type": "text/html" }
-    });
-  });
+  const result = await enrichStation({ ...station, description: "", website_url: "https://radio.example/" }, async () => ({
+    ok: true,
+    url: "https://outro-dominio.example/",
+    headers: new Headers({ "content-type": "text/html" }),
+    text: async () => '<html><head><meta name="description" content="Descrição falsa suficientemente longa para ser usada."></head></html>'
+  }));
   assert.equal(result.enrichment, null);
 });
 
