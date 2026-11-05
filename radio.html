@@ -63,7 +63,23 @@ document.getElementById("favorite").addEventListener("click",e=>{const active=sa
 document.getElementById("share").addEventListener("click",async()=>{const data={title:st.name+" — Conexão FM",text:"Ouça "+st.name+" na Conexão FM.",url:location.href};try{if(navigator.share)await navigator.share(data);else if(navigator.clipboard?.writeText){await navigator.clipboard.writeText(location.href);state.textContent="Link da rádio copiado."}else{window.prompt("Copie o link da rádio:",location.href)}}catch(error){if(error?.name!=="AbortError")window.prompt("Copie o link da rádio:",location.href)}});
 }
 if(!slug){showError("O link desta página está incompleto. Escolha uma emissora no catálogo.");return}
-fetch(API,{cache:"no-store"}).then(r=>{if(!r.ok)throw new Error("API indisponível");return r.json()}).then(data=>{const station=(data.stations||[]).find(s=>String(s.slug)===slug);if(!station)throw new Error("A emissora não está cadastrada no catálogo.");render(station)}).catch(error=>showError(error.message||"Não foi possível carregar os dados agora."));
+async function findStation(){
+ let offset=0;
+ while(offset<=100000){
+  const endpoint=new URL(API);
+  endpoint.searchParams.set("offset",String(offset));
+  const response=await fetch(endpoint.toString(),{cache:"no-store"});
+  if(!response.ok)throw new Error("API indisponível");
+  const data=await response.json();
+  const stations=Array.isArray(data.stations)?data.stations:[];
+  const station=stations.find(item=>String(item.slug)===slug);
+  if(station)return station;
+  if(!data.pagination?.has_more||stations.length===0)break;
+  offset+=stations.length;
+ }
+ throw new Error("A emissora não está cadastrada no catálogo.");
+}
+findStation().then(render).catch(error=>showError(error.message||"Não foi possível carregar os dados agora."));
 })();
 </script>
 </body>
