@@ -352,6 +352,8 @@ export async function fetchAllStations(fetchImpl = fetch) {
 export async function generate() {
   const catalogStations = await fetchAllStations();
   const stations = await enrichStations(catalogStations);
+  const enrichedCount = stations.filter(station => station.enrichment).length;
+  console.log(`Informações adicionais encontradas em ${enrichedCount} de ${stations.length} rádios.`);
   if (!stations.length) throw new Error("A API não retornou rádios; páginas existentes foram preservadas.");
 
   await mkdir(OUTPUT, { recursive: true });
