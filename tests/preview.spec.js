@@ -142,6 +142,7 @@ test("Player contabiliza rádios antigas do catálogo sem prefixo db/rb", async 
       body: JSON.stringify({ ok: true, recorded: true }) });
   });
   await page.goto("/");
+  await page.locator('[data-view="explorar"]').first().click();
   const laserButton = page.locator('#stations [data-play="laser-fm-campinas"]');
   await expect(laserButton).toBeVisible({ timeout: 20000 });
   await laserButton.click();
