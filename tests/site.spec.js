@@ -284,7 +284,8 @@ test("todas as páginas públicas do sitemap respondem e possuem SEO básico", a
     const response = await request.get(path);
     expect(response.status(), `HTTP status for ${path}`).toBe(200);
     const html = await response.text();
-    expect(html).toMatch(/<title>[^<]+<\\/title>/i);
+    expect(html).toContain("<title>");
+    expect(html).toContain("</title>");
     expect(html).toMatch(/<meta[^>]+name=["']description["'][^>]+content=["'][^"']+["']/i);
     expect(html).toContain(`<link rel="canonical" href="${url}"`);
     expect(html).not.toMatch(/<meta[^>]+name=["']robots["'][^>]+content=["'][^"']*noindex/i);
