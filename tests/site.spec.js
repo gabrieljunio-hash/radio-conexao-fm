@@ -94,6 +94,19 @@ test("página individual encontra rádios depois das primeiras 100", async ({ pa
   expect(offsets).toEqual([0, 100]);
 });
 
+
+test("página HTML individual entrega SEO sem depender de JavaScript", async ({ page }) => {
+  await page.goto("/radio/rb-f509ca0d-b4fd-44fa-bf88-5a20ddbc7e2d/");
+  await expect(page.locator("h1")).toHaveText("012 Rock News");
+  await expect(page).toHaveTitle(/012 Rock News ao vivo/);
+  await expect(page.locator('meta[name="description"]')).toHaveAttribute("content", /012 Rock News/);
+  await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
+    "href",
+    "https://radio-conexao-fm.pages.dev/radio/rb-f509ca0d-b4fd-44fa-bf88-5a20ddbc7e2d/"
+  );
+  await expect(page.locator('script[type="application/ld+json"]')).toContainText("RadioStation");
+});
+
 test("páginas de explorar e favoritos mantêm a navegação", async ({ page }) => {
   await page.goto("/radios.html");
   await expect(page.locator("#exploreCategories")).toBeVisible();
