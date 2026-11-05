@@ -131,3 +131,34 @@ test("enriquece várias rádios sem interromper o lote quando um site falha", as
   assert.match(result[0].enrichment.description, /programação regional/);
   assert.equal(result[1].enrichment, null);
 });
+
+
+test("localiza o site oficial por nome e país quando a rádio não tem UUID nem site cadastrado", async () => {
+  const requests = [];
+  const fetchImpl = async url => {
+    requests.push(String(url));
+    if (String(url).includes("/byname/")) {
+      return new Response(JSON.stringify([
+        { name: station.name, countrycode: "BR", homepage: "https://radio.example/" },
+        { name: "Outra Rádio", countrycode: "BR", homepage: "https://other.example/" }
+      ]), { status: 200, headers: { "content-type": "application/json" } });
+    }
+    return new Response('<html><head><meta name="description" content="Emissora com música, informação e programação local para a comunidade durante toda a semana."></head></html>', {
+      status: 200, headers: { "content-type": "text/html" }
+    });
+  };
+  const result = await enrichStation({ ...station, slug: "radio-sem-uuid", description: "", website_url: "" }, fetchImpl);
+  assert.match(result.enrichment.description, /música, informação e programação local/);
+  assert.match(requests[0], /byname/);
+  assert.equal(requests.length, 2);
+});
+
+test("não escolhe um site quando o diretório retorna duas fontes possíveis para a mesma rádio", async () => {
+  const result = await enrichStation({ ...station, slug: "radio-sem-uuid", description: "", website_url: "" }, async () =>
+    new Response(JSON.stringify([
+      { name: station.name, countrycode: "BR", homepage: "https://one.example/" },
+      { name: station.name, countrycode: "BR", homepage: "https://two.example/" }
+    ]), { status: 200, headers: { "content-type": "application/json" } })
+  );
+  assert.equal(result.enrichment, null);
+});
