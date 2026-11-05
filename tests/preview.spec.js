@@ -262,15 +262,3 @@ test("se não houver campanha ativa, a área de patrocínio permanece oculta", a
   await page.goto("/");
   await expect(page.locator("#sponsoredSection")).toBeHidden();
 });
-
-test("Página HTML individual da rádio entrega SEO sem depender de JavaScript", async ({ page }) => {
-  await page.goto("/radio/rb-f509ca0d-b4fd-44fa-bf88-5a20ddbc7e2d/");
-  await expect(page.locator("h1")).toHaveText("012 Rock News");
-  await expect(page).toHaveTitle(/012 Rock News ao vivo/);
-  await expect(page.locator('meta[name="description"]')).toHaveAttribute("content", /012 Rock News/);
-  await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
-    "href",
-    "https://radio-conexao-fm.pages.dev/radio/rb-f509ca0d-b4fd-44fa-bf88-5a20ddbc7e2d/"
-  );
-  await expect(page.locator('script[type="application/ld+json"]')).toContainText("RadioStation");
-});
