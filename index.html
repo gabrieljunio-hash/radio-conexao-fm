@@ -327,40 +327,103 @@ $("genreRails").addEventListener("click",e=>{const p=e.target.closest("[data-rai
 $("recentStations").addEventListener("click",e=>{const p=e.target.closest("[data-recent-play]");if(p)play(p.dataset.recentPlay)});
 $("popularStations").addEventListener("click",e=>{const p=e.target.closest("[data-popular-play]");if(p)play(p.dataset.popularPlay)});
 let searchTimer=null,searchRequest=0;
-async function searchRadioDirectory(query){
- const term=String(query||"").trim();if(term.length<2)return;
- const requestId=++searchRequest;
- const limit=dataSaver?"20":"40";
- const urls=["name","state","tag"].map(field=>"https://de1.api.radio-browser.info/json/stations/search?"+field+"="+encodeURIComponent(term)+"&hidebroken=true&is_https=true&order=clickcount&reverse=true&limit="+limit);
+function setCatalogOptions(select,items,placeholder,valueOf,labelOf){if(!select)return;const current=select.value;select.replaceChildren(new Option(placeholder,""));for(const item of items){const option=new Option(labelOf(item),valueOf(item));select.add(option)}if([...select.options].some(option=>option.value===current))select.value=current}
+async function loadCatalogFilters(){
+ const countrySelect=$("countryFilter"),languageSelect=$("languageFilter"),genreSelect=$("genreFilter");
  try{
-  const responses=await Promise.all(urls.map(url=>fetch(url,{headers:{"Accept":"application/json"}}).catch(()=>null)));
-  const successful=responses.filter(response=>response&&response.ok);
-  if(!successful.length)throw new Error("Busca indisponível");
-  const groups=await Promise.all(successful.map(response=>response.json().catch(()=>[])));
-  const rows=[...new Map(groups.flat().map(st=>[st.stationuuid||String(st.name||"").toLocaleLowerCase("pt-BR"),st])).values()];
-  if(requestId!==searchRequest||$("search").value.trim()!==term)return;
-  let added=0;
-  for(const st of rows){
-   const name=String(st.name||"").trim(),stream=st.url_resolved||st.url;let streamUrl="";
-   try{const parsed=new URL(stream);if(parsed.protocol==="https:")streamUrl=parsed.href}catch{}
-   const bitrate=Number(st.bitrate)||0;if(!name||!streamUrl||Number(st.hls)===1||(dataSaver?(!bitrate||bitrate<64||bitrate>128):bitrate>320))continue;
-   const key=name.toLocaleLowerCase("pt-BR");if(RADIO_STATIONS.some(s=>s.name.toLocaleLowerCase("pt-BR")===key))continue;
-   const tags=String(st.tags||"").toLocaleLowerCase("pt-BR"),match=tags+" "+name.toLowerCase();let g="Pop";
-   if(/sertanej|country|caipira|forro|forró|brega/.test(match))g="Sertanejo";
-   else if(/flashback|oldies|80s|90s|nostalgia|disco/.test(match))g="Flashback";
-   else if(/news|noticia|notícia|jornal|talk|information/.test(match))g="Notícias";
-   else if(/gospel|christian|evangel|worship/.test(match))g="Gospel";
-   else if(/rock|metal|punk|alternative/.test(match))g="Rock";
-   else if(/jazz|blues|soul/.test(match))g="Jazz & Blues";
-   else if(/classical|orchestra|opera/.test(match))g="Clássica";
-   else if(/electronic|techno|house|dance|trance/.test(match))g="Eletrônica";
-   else if(/latin|salsa|bachata|reggaeton|cumbia/.test(match))g="Latina";
-   const id="rb-"+(st.stationuuid||encodeURIComponent(name));
-   RADIO_STATIONS.push({id,name,city:[st.state,st.country].filter(Boolean).join(", ")||"Internacional",genre:g,tagline:tags.split(",").filter(Boolean).slice(0,2).join(" · ")||"Rádio online",streamUrl,bitrate,favicon:safeImageUrl(st.favicon||st.logo||""),cover:g==="Sertanejo"?"corange":g==="Flashback"?"cgold":g==="Notícias"?"cblue":g==="Gospel"?"cgreen":"cpink",initials:name.split(/\s+/).slice(0,3).map(w=>w[0]).join("").toUpperCase().slice(0,5)});added++;
-  }
-  render();if(added)toast("Encontrei "+added+" novas rádios para sua busca");
- }catch(error){console.warn("Busca remota de rádios:",error)}
+  const [dbResponse,countryResponse,languageResponse]=await Promise.all([
+   fetch("https://radio-conexao-api.bieljuniho.workers.dev/api/catalog/filters",{cache:"no-store"}).catch(()=>null),
+   fetch("https://de1.api.radio-browser.info/json/countries?order=stationcount&reverse=true&limit=100",{headers:{"Accept":"application/json"}}).catch(()=>null),
+   fetch("https://de1.api.radio-browser.info/json/languages?order=stationcount&reverse=true&limit=80",{headers:{"Accept":"application/json"}}).catch(()=>null)
+  ]);
+  const db=dbResponse&&dbResponse.ok?await dbResponse.json():{};
+  const countries=countryResponse&&countryResponse.ok?await countryResponse.json():[];
+  const languages=languageResponse&&languageResponse.ok?await languageResponse.json():[];
+  const countryMap=new Map();
+  for(const item of (Array.isArray(countries)?countries:[])){const code=String(item.iso_3166_1||item.iso_3166_1_alpha_2||"").toUpperCase();if(/^[A-Z]{2}$/.test(code))countryMap.set(code,{code,name:String(item.name||code),count:Number(item.stationcount)||0})}
+  for(const item of (db.countries||[])){const code=String(item.code||"").toUpperCase();if(code&&!countryMap.has(code))countryMap.set(code,{code,name:code,count:Number(item.station_count)||0})}
+  if(!countryMap.has("BR"))countryMap.set("BR",{code:"BR",name:"Brasil",count:0});
+  catalogCountries=[...countryMap.values()].sort((a,b)=>b.count-a.count||a.name.localeCompare(b.name));catalogCountries.sort((a,b)=>a.code==="BR"?-1:b.code==="BR"?1:b.count-a.count);
+  const languageMap=new Map();
+  for(const item of (Array.isArray(languages)?languages:[])){const name=String(item.name||"").trim(),code=String(item.iso_639||item.iso_639_1||item.code||"").toLowerCase();if(name&&code)languageMap.set(code,{code,name,count:Number(item.stationcount)||0})}
+  for(const item of (db.languages||[])){const raw=String(item.code||"").trim(),code=raw.toLowerCase().split("-")[0];if(raw&&!languageMap.has(code))languageMap.set(code,{code,name:raw,count:Number(item.station_count)||0})}
+  catalogLanguages=[...languageMap.values()].sort((a,b)=>b.count-a.count||a.name.localeCompare(b.name));
+  catalogCategories=(db.categories||[]).filter(item=>item.slug&&item.name);
+  if(!catalogCategories.length)catalogCategories=[{slug:"sertanejo",name:"Sertanejo"},{slug:"gospel",name:"Gospel"},{slug:"noticias",name:"Notícias"},{slug:"pop",name:"Pop"},{slug:"rock",name:"Rock"},{slug:"flashback",name:"Flashback"},{slug:"mpb",name:"MPB"},{slug:"regional",name:"Regional"},{slug:"internacional",name:"Internacional"}];
+  setCatalogOptions(countrySelect,catalogCountries,"Todos os países",item=>item.code,item=>countryFlag(item.code)+" "+item.name);
+  setCatalogOptions(languageSelect,catalogLanguages,"Todos os idiomas",item=>item.code,item=>item.name);
+  setCatalogOptions(genreSelect,catalogCategories,"Todos os gêneros",item=>item.slug,item=>item.name);
+ }catch(error){console.warn("Filtros do catálogo indisponíveis:",error)}
 }
+function catalogApiParams(offset){const f=catalogFilterValues(),params=new URLSearchParams({limit:"24",offset:String(offset)}),q=$("search").value.trim();if(q)params.set("q",q);if(f.country)params.set("country_code",f.country);if(f.language)params.set("language",f.language);if(f.region)params.set("region",f.region);if(f.city)params.set("city",f.city);if(f.category)params.set("category",f.category);if(f.verification)params.set("verification",f.verification);return params}
+async function loadCatalogApiPage(reset=false,requestId=catalogRequest){
+ if(reset){catalogApiOffset=0;catalogApiHasMore=true;RADIO_STATIONS=RADIO_STATIONS.filter(st=>st.source!=="api")}
+ if(!catalogApiHasMore&& !reset)return;
+ const offset=reset?0:catalogApiOffset;
+ try{
+  const response=await fetch("https://radio-conexao-api.bieljuniho.workers.dev/api/stations?"+catalogApiParams(offset).toString(),{cache:"no-store"});
+  if(!response.ok)throw new Error("Catálogo próprio indisponível");
+  const data=await response.json();if(requestId!==catalogRequest)return;
+  const categoryNames={"sertanejo":"Sertanejo","gospel":"Gospel","noticias":"Notícias","esportes":"Esportes","pop":"Pop","rock":"Rock","flashback":"Flashback","adulto-contemporaneo":"Adulto contemporâneo","popular":"Popular","regional":"Regional","mpb":"MPB","jazz-blues":"Jazz & Blues","eletronica":"Eletrônica","classica":"Clássica","brega":"Brega","internacional":"Internacional","dance":"Dance"};
+  const seen=new Set(RADIO_STATIONS.map(st=>st.id));
+  for(const item of (data.stations||[])){
+   const id="db-"+String(item.slug||item.id||"").trim(),name=String(item.name||"").trim();if(!name||!id||seen.has(id))continue;
+   let streamUrl="";try{const parsed=new URL(String(item.stream_url||""));if(parsed.protocol==="https:")streamUrl=parsed.href}catch{}
+   const categorySlugs=Array.isArray(item.categories)?item.categories.map(v=>String(v||"").trim()).filter(Boolean):String(item.category_slugs||"").split(",").filter(Boolean);
+   const genre=categoryNames[categorySlugs[0]]||"Rádio online",countryCode=String(item.country_code||"BR").toUpperCase(),state=String(item.state||""),cityRaw=String(item.city||"");
+   const city=[cityRaw,state].filter(Boolean).join(", ")||countryName(countryCode),favicon=safeImageUrl(item.logo_url||"");
+   const cover=genre==="Sertanejo"?"corange":genre==="Flashback"?"cgold":genre==="Notícias"?"cblue":genre==="Gospel"?"cgreen":genre==="Rock"?"cteal":"cpink";
+   RADIO_STATIONS.push({id,name,city,cityRaw,state,countryCode,language:String(item.language||""),categorySlugs,genre,tagline:String(item.description||"Rádio online"),streamUrl,websiteUrl:safeImageUrl(item.website_url||""),favicon,cover,initials:name.split(/\\s+/).slice(0,3).map(w=>w[0]).join("").toUpperCase().slice(0,5),verified:false,isVerified:item.is_verified===true||Number(item.is_verified)===1,homepageEligible:false,favoriteCount:0,rank:999999,source:"api"});seen.add(id);
+  }
+  catalogApiOffset=offset+(data.stations||[]).length;catalogApiHasMore=!!data.pagination?.has_more;
+ }catch(error){console.warn("Página do catálogo D1 indisponível:",error);if(reset)catalogApiHasMore=false}
+ render();
+}
+function directoryLanguageName(code){const value=String(code||"").toLowerCase();return catalogLanguages.find(item=>item.code===value)?.name||({pt:"portuguese",en:"english",es:"spanish",fr:"french",de:"german",it:"italian"}[value]||value)}
+async function searchRadioDirectory(query,reset=true,requestId=catalogRequest){
+ const term=String(query||"").trim(),f=catalogFilterValues();
+ if(reset){catalogDirectoryOffset=0;catalogDirectoryHasMore=false;RADIO_STATIONS=RADIO_STATIONS.filter(st=>st.source!=="directory")}
+ const hasFilters=!!(f.country||f.language||f.region||f.city||f.category);
+ if(term.length<2&&!hasFilters){render();return}
+ const offset=reset?0:catalogDirectoryOffset,limit=dataSaver?20:24;
+ const fields=term.length>=2?["name","state","tag"]:[f.city?"name":"name"];
+ try{
+  const responses=await Promise.all(fields.map(async field=>{
+   const params=new URLSearchParams({hidebroken:"true",is_https:"true",order:"clickcount",reverse:"true",limit:String(limit),offset:String(offset)});
+   if(term.length>=2)params.set(field,term);
+   if(f.country)params.set("countrycode",f.country);
+   if(f.language)params.set("language",directoryLanguageName(f.language));
+   if(f.region)params.set("state",f.region);
+   if(f.city&&term.length<2)params.set("name",f.city);
+   if(f.category){const cat=catalogCategories.find(item=>item.slug===f.category);params.set("tag",cat?.name||f.category)}
+   const response=await fetch("https://de1.api.radio-browser.info/json/stations/search?"+params.toString(),{headers:{"Accept":"application/json"}}).catch(()=>null);
+   return response&&response.ok?await response.json().catch(()=>[]):[];
+  }));
+  if(requestId!==catalogRequest)return;
+  const rows=[...new Map(responses.flat().map(st=>[st.stationuuid||String(st.name||"").toLowerCase(),st])).values()];
+  const seen=new Set(RADIO_STATIONS.map(st=>st.id)),seenStreams=new Set(RADIO_STATIONS.map(st=>String(st.streamUrl||"").toLowerCase()));
+  for(const st of rows){
+   const name=String(st.name||"").trim(),stream=st.url_resolved||st.url;let streamUrl="";try{const parsed=new URL(stream);if(parsed.protocol==="https:")streamUrl=parsed.href}catch{}
+   const bitrate=Number(st.bitrate)||0,countryCode=String(st.countrycode||"").toUpperCase(),language=String(st.language||"").split(",")[0].trim().toLowerCase(),state=String(st.state||"");
+   if(!name||!streamUrl||Number(st.hls)===1||(dataSaver?(!bitrate||bitrate<64||bitrate>128):bitrate>320))continue;
+   if(f.country&&countryCode!==f.country)continue;
+   if(f.language&&language!==directoryLanguageName(f.language).toLowerCase()&&!language.startsWith(f.language.toLowerCase()))continue;
+   if(f.region&&!state.toLocaleLowerCase("pt-BR").includes(f.region.toLocaleLowerCase("pt-BR")))continue;
+   if(f.city&&!state.toLocaleLowerCase("pt-BR").includes(f.city.toLocaleLowerCase("pt-BR"))&&!name.toLocaleLowerCase("pt-BR").includes(f.city.toLocaleLowerCase("pt-BR")))continue;
+   const tags=String(st.tags||"").toLowerCase(),match=tags+" "+name.toLowerCase();let g="Pop";
+   if(/sertanej|country|caipira|forro|forró|brega/.test(match))g="Sertanejo";else if(/flashback|oldies|80s|90s|nostalgia|disco/.test(match))g="Flashback";else if(/news|noticia|notícia|jornal|talk|information/.test(match))g="Notícias";else if(/gospel|christian|evangel|worship/.test(match))g="Gospel";else if(/rock|metal|punk|alternative/.test(match))g="Rock";else if(/jazz|blues|soul/.test(match))g="Jazz & Blues";else if(/classical|orchestra|opera/.test(match))g="Clássica";else if(/electronic|techno|house|dance|trance/.test(match))g="Eletrônica";else if(/latin|salsa|bachata|reggaeton|cumbia/.test(match))g="Latina";
+   const categorySlugs=tags.split(",").map(makeCatalogSlug).filter(Boolean),id="rb-"+String(st.stationuuid||encodeURIComponent(name));
+   if(seen.has(id)||seenStreams.has(streamUrl.toLowerCase()))continue;
+   const city=[state,st.country].filter(Boolean).join(", ")||"Internacional",favicon=safeImageUrl(st.favicon||st.logo||"");
+   const cover=g==="Sertanejo"?"corange":g==="Flashback"?"cgold":g==="Notícias"?"cblue":g==="Gospel"?"cgreen":"cpink";
+   RADIO_STATIONS.push({id,name,city,cityRaw:state,state,countryCode,language,categorySlugs,genre:g,tagline:tags.split(",").filter(Boolean).slice(0,2).join(" · ")||"Rádio online",streamUrl,bitrate,favicon,cover,initials:name.split(/\\s+/).slice(0,3).map(w=>w[0]).join("").toUpperCase().slice(0,5),verified:false,isVerified:false,directoryVerified:Number(st.lastcheckok)===1,source:"directory"});seen.add(id);seenStreams.add(streamUrl.toLowerCase());
+  }
+  catalogDirectoryOffset=offset+limit;catalogDirectoryHasMore=rows.length>=limit;
+ }catch(error){console.warn("Busca internacional de rádios indisponível:",error);catalogDirectoryHasMore=false}
+ render();
+}
+async function refreshCatalog(reset=true){const requestId=++catalogRequest;if(reset){showAllStations=false;catalogApiOffset=0;catalogDirectoryOffset=0;catalogApiHasMore=true;catalogDirectoryHasMore=false}await Promise.all([loadCatalogApiPage(reset,requestId),searchRadioDirectory($("search").value.trim(),reset,requestId)])}
+async function loadMoreCatalog(){const button=$("loadMoreCatalog");if(button)button.disabled=true;const requestId=catalogRequest;await Promise.all([loadCatalogApiPage(false,requestId),searchRadioDirectory($("search").value.trim(),false,requestId)]);if(button)button.disabled=false;showAllStations=true;render()}
 $("search").addEventListener("input",()=>{view="explorar";genre="";showAllStations=false;const searching=$("search").value.trim().length>0;$("homeHero").hidden=searching;$("homeGenres").hidden=searching;render();clearTimeout(searchTimer);const q=$("search").value.trim();if(q.length>=2)searchTimer=setTimeout(()=>searchRadioDirectory(q),450);else searchRequest++});$("searchSubmit").addEventListener("click",()=>{const q=$("search").value.trim();$("search").blur();clearTimeout(searchTimer);if(q.length>=2)searchRadioDirectory(q);$("stationSection").scrollIntoView({behavior:"smooth",block:"start"})});$("search").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();$("search").blur();clearTimeout(searchTimer);const q=$("search").value.trim();if(q.length>=2)searchRadioDirectory(q)}});$("clear").addEventListener("click",()=>{$("search").value="";genre="";view="inicio";showAllStations=false;$("homeHero").hidden=false;$("homeGenres").hidden=false;render()});$("all").addEventListener("click",()=>{showAllStations=!showAllStations;render()});
 const dataSaverButton=$("dataSaver");function applyDataSaver(){document.body.classList.toggle("data-saver",dataSaver);dataSaverButton.setAttribute("aria-pressed",String(dataSaver));dataSaverButton.textContent="Economia de dados: "+(dataSaver?"ligada":"desligada");showAllStations=false;render();setPlayerCover($("playerCover"),current);if($("fullCover"))setPlayerCover($("fullCover"),current)}dataSaverButton.addEventListener("click",()=>{dataSaver=!dataSaver;try{localStorage.setItem("conexao-fm-data-saver",dataSaver?"1":"0")}catch{}applyDataSaver();toast(dataSaver?"Economia ativada: reprodução limitada a rádios com bitrate confirmado entre 64 e 128 kbps. Streams sem bitrate conhecido ficam indisponíveis neste modo.":"Economia de dados desativada.");});applyDataSaver();
 document.querySelectorAll("[data-view]").forEach(b=>b.addEventListener("click",()=>{view=b.dataset.view;if(view==="inicio"){genre="";$("search").value="";$("homeHero").hidden=false;$("homeGenres").hidden=false}if(view!=="inicio")$("stationSection").scrollIntoView({behavior:"smooth"});render()}));
