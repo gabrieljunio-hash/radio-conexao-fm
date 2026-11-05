@@ -128,18 +128,36 @@ async function fetchOfficialPage(url, fetchImpl) {
   }
 }
 
+function normalizeStationName(value) {
+  return String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase().replace(/[^a-z0-9]+/g, " ").trim().replace(/\s+/g, " ");
+}
+
 async function findDirectoryWebsite(station, fetchImpl) {
-  const match = String(station.slug || "").match(/^rb-([a-f0-9-]{36})$/i);
-  if (!match) return "";
+  const uuid = String(station.slug || "").match(/^rb-([a-f0-9-]{36})$/i)?.[1];
+  const endpoint = uuid
+    ? "https://all.api.radio-browser.info/json/stations/byuuid/" + uuid
+    : "https://all.api.radio-browser.info/json/stations/byname/" + encodeURIComponent(String(station.name || "").slice(0, 100));
+  if (!uuid && (!station.country_code || !station.name)) return "";
   try {
-    const response = await fetchImpl("https://all.api.radio-browser.info/json/stations/byuuid/" + match[1], {
+    const response = await fetchImpl(endpoint, {
       headers: { Accept: "application/json", "User-Agent": "ConexaoFM-RadioInfoBot/1.0" },
       signal: AbortSignal.timeout(7000)
     });
     if (!response.ok || !/application\/json/i.test(response.headers.get("content-type") || "")) return "";
     const data = await response.json();
-    const record = Array.isArray(data) ? data[0] : data;
-    return safeHttps(record?.homepage);
+    const records = Array.isArray(data) ? data : data ? [data] : [];
+    let matches = records;
+    if (!uuid) {
+      const expectedName = normalizeStationName(station.name);
+      const expectedCountry = String(station.country_code || "").toUpperCase();
+      matches = records.filter(item =>
+        normalizeStationName(item.name) === expectedName &&
+        String(item.countrycode || "").toUpperCase() === expectedCountry
+      );
+    }
+    const websites = [...new Set(matches.map(item => safeHttps(item.homepage)).filter(Boolean))];
+    return websites.length === 1 ? websites[0] : "";
   } catch {
     return "";
   }
