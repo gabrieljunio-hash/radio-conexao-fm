@@ -690,12 +690,12 @@ export default {
           bindings.push(languagePrefix + "%");
         }
         if (state) {
-          conditions.push("lower(s.state) = lower(?)");
-          bindings.push(state);
+          conditions.push("lower(s.state) LIKE ?");
+          bindings.push("%" + state.toLowerCase() + "%");
         }
         if (city) {
-          conditions.push("lower(s.city) = lower(?)");
-          bindings.push(city);
+          conditions.push("lower(s.city) LIKE ?");
+          bindings.push("%" + city.toLowerCase() + "%");
         }
         if (category) {
           conditions.push(`EXISTS (
