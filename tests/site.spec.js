@@ -347,3 +347,26 @@ test("explorar combina país, idioma e gênero, mostra bandeira e carrega mais r
   await expect.poll(() => stationRequests.some(url => url.searchParams.get("offset") === "24")).toBeTruthy();
   await expect(page.locator("#stations")).toContainText("Rock USA FM 2");
 });
+
+
+test("rádios sem logotipo exibem arte neutra em vez de capa vazia", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("conexao-fm-data-saver", "0"));
+  await page.route("**/api/stations**", route => route.fulfill({
+    status: 200,
+    contentType: "application/json",
+    body: JSON.stringify({
+      stations: [{
+        id: "sem-logo", slug: "sem-logo", name: "Rádio Sem Logo",
+        stream_url: "https://stream.example.test/live", logo_url: "",
+        city: "Campinas", state: "SP", country_code: "BR",
+        language: "Portuguese", categories: ["pop"], is_verified: 1
+      }],
+      pagination: { total: 1, limit: 100, offset: 0, has_more: false }
+    })
+  }));
+  await page.goto("/index.html?view=explorar");
+  const station = page.locator(".station").filter({ hasText: "Rádio Sem Logo" });
+  await expect(station).toBeVisible();
+  await expect(station.locator(".cover-fallback")).toBeVisible();
+  await expect(station.locator(".station-logo")).toHaveCount(0);
+});
