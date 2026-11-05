@@ -128,7 +128,7 @@ test("Rádios estáticas Laser FM e Prata FM registram audiência", async ({ pag
   await page.route(API + "/api/events", async route => {
     const request = route.request();
     const headers = {
-      "Access-Control-Allow-Origin": "https://radio-conexao-fm.pages.dev",
+      "Access-Control-Allow-Origin": new URL(page.url()).origin,
       "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
       "Access-Control-Allow-Headers": "Content-Type",
       "Vary": "Origin"
