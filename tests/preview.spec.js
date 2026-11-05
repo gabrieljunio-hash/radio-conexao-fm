@@ -127,12 +127,19 @@ test("Player contabiliza rádios antigas do catálogo sem prefixo db/rb", async 
     };
   });
   await page.route(API + "/api/events", async route => {
+    const origin = route.request().headers().origin || "*";
     if (route.request().method() === "OPTIONS") {
-      await route.fulfill({ status: 204, headers: { "Access-Control-Allow-Origin": "https://feature-home-recent-popular.radio-conexao-fm.pages.dev" } });
+      await route.fulfill({ status: 204, headers: {
+        "Access-Control-Allow-Origin": origin,
+        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization"
+      } });
       return;
     }
     payload = route.request().postDataJSON();
-    await route.fulfill({ status: 201, contentType: "application/json", body: JSON.stringify({ ok: true, recorded: true }) });
+    await route.fulfill({ status: 201, contentType: "application/json",
+      headers: { "Access-Control-Allow-Origin": origin },
+      body: JSON.stringify({ ok: true, recorded: true }) });
   });
   await page.goto("/");
   await page.evaluate(() => play("laser-fm-campinas"));
