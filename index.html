@@ -385,7 +385,7 @@ function directoryLanguageName(code){const value=String(code||"").toLowerCase();
 async function searchRadioDirectory(query,reset=true,requestId=catalogRequest){
  const term=String(query||"").trim(),f=catalogFilterValues();
  if(reset){catalogDirectoryOffset=0;catalogDirectoryHasMore=false;RADIO_STATIONS=RADIO_STATIONS.filter(st=>st.source!=="directory")}
- const hasFilters=!!(f.country||f.language||f.region||f.city||f.category);
+ const hasFilters=!!(f.country||f.language||f.region||f.city||f.category||f.verification==="verified");
  if(term.length<2&&!hasFilters){render();return}
  const offset=reset?0:catalogDirectoryOffset,limit=dataSaver?20:24;
  const fields=term.length>=2?["name","state","tag"]:[f.city?"name":"name"];
