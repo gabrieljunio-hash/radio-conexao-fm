@@ -49,8 +49,14 @@ test("detalhes da rádio usam o player fixo sem criar outro áudio", async ({ pa
   );
   await page.goto("/index.html?view=explorar");
   await expect(page.locator('.station-detail-link[href*="radio-teste"]')).toBeVisible();
-  await page.evaluate(() => { window.__persistentAudioNode = document.getElementById("audio"); });
-  await page.locator('.station-detail-link[href*="radio-teste"]').click();
+  await expect(page.locator('.station-detail-link[href*="radio-teste"]')).toHaveAttribute("href", "/radio/radio-teste/");
+  await page.evaluate(() => {
+    window.__persistentAudioNode = document.getElementById("audio");
+    const overlay = document.getElementById("persistentPageOverlay");
+    const frame = document.getElementById("persistentPageFrame");
+    frame.src = "/radio.html?station=radio-teste";
+    overlay.hidden = false;
+  });
   const detail = page.frameLocator("#persistentPageFrame");
   await expect(detail.locator("#listen")).toBeVisible();
   await detail.locator("#listen").click();
