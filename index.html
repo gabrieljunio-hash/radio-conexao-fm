@@ -302,21 +302,29 @@ function getAudienceSessionId(){
  }
  return audienceSessionId;
 }
+function audienceStationKey(station){
+ const id=String(station?.id||"").trim();
+ if(/^db-[a-z0-9]+(?:-[a-z0-9]+)*$/.test(id)||/^rb-[A-Za-z0-9%_.!~*'()-]+$/.test(id))return id;
+ const legacy=id.normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").toLowerCase().replace(/[^a-z0-9-]+/g,"-").replace(/-+/g,"-").replace(/^-|-$/g,"").slice(0,80);
+ return legacy?"rb-legacy-"+legacy:"";
+}
 function sendAudienceEvent(eventType,slug=trackedAudienceSlug){
  if(!slug)return;
  const isExternal=slug.startsWith("rb-");
  if(!isExternal&&!/^db-[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug))return;
  const payload={event_type:eventType,station_slug:isExternal?slug:slug.slice(3),session_id:getAudienceSessionId()};
- const station=current?.id===slug?current:trackedAudienceStation?.id===slug?trackedAudienceStation:null;
- if(isExternal&&station){payload.station_name=station.name;payload.station_logo=station.favicon||""}
+ const station=trackedAudienceStation||(current?.id===slug?current:null);
+ if(isExternal&&station){payload.station_name=station.name;payload.station_logo=station.favicon||station.logo_url||""}
  fetch("https://radio-conexao-api.bieljuniho.workers.dev/api/events",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload),keepalive:eventType==="stop"})
   .then(async response=>{if(!response.ok){const detail=await response.text().catch(()=>"");console.warn("Falha ao registrar audiência:",response.status,detail.slice(0,200))}})
   .catch(error=>console.warn("Falha de conexão ao registrar audiência:",error));
 }
 function startAudienceTracking(){
- const slug=current?.id||"";
- if(!slug.startsWith("db-")&&!slug.startsWith("rb-")){stopAudienceTracking();return}
- if(trackedAudienceSlug!==slug){stopAudienceTracking();trackedAudienceSlug=slug;trackedAudienceStation=current;sendAudienceEvent("play",slug)}
+ const station=current;
+ if(!station?.streamUrl){stopAudienceTracking();return}
+ const slug=audienceStationKey(station);
+ if(!slug){stopAudienceTracking();return}
+ if(trackedAudienceSlug!==slug){stopAudienceTracking();trackedAudienceSlug=slug;trackedAudienceStation=station;sendAudienceEvent("play",slug)}
 }
 function stopAudienceTracking(){
  if(trackedAudienceSlug){sendAudienceEvent("stop",trackedAudienceSlug);trackedAudienceSlug=null;trackedAudienceStation=null}
