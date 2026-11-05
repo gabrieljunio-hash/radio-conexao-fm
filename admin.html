@@ -96,7 +96,8 @@
 (() => {
   const API = "https://radio-conexao-api.bieljuniho.workers.dev";
   const $ = (id) => document.getElementById(id);
-  let token = sessionStorage.getItem("radioAdminToken") || "";
+  let token = localStorage.getItem("radioAdminToken") || sessionStorage.getItem("radioAdminToken") || "";
+  if (token) { localStorage.setItem("radioAdminToken", token); sessionStorage.removeItem("radioAdminToken"); }
   let candidates = [];
   let discoverOffset = 0;
   let testedManual = false;
@@ -134,10 +135,10 @@
   });
   $("login-form").addEventListener("submit", async e => {
     e.preventDefault(); token = $("token").value.trim();
-    try { await connect(); sessionStorage.setItem("radioAdminToken", token); hide("login-message"); }
+    try { await connect(); localStorage.setItem("radioAdminToken", token); hide("login-message"); }
     catch (err) { token = ""; show("login-message", err.message, "error"); }
   });
-  $("logout").addEventListener("click", () => { token = ""; sessionStorage.removeItem("radioAdminToken"); setConnected(false); });
+  $("logout").addEventListener("click", () => { token = ""; localStorage.removeItem("radioAdminToken"); sessionStorage.removeItem("radioAdminToken"); setConnected(false); });
   async function discover(reset = false) {
     if (reset) { candidates = []; discoverOffset = 0; $("candidates").replaceChildren(); }
     hide("discover-message");
@@ -260,7 +261,7 @@
   });
   $("refresh").addEventListener("click",loadStations);
   $("station-search").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();loadStations();}});
-  if(token){connect().catch(()=>{token="";sessionStorage.removeItem("radioAdminToken");setConnected(false);});}
+  if(token){connect().catch(()=>{token="";localStorage.removeItem("radioAdminToken");sessionStorage.removeItem("radioAdminToken");setConnected(false);});}
 })();
 </script>
 </body>
