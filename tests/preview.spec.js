@@ -148,7 +148,7 @@ test("Player contabiliza rádios antigas do catálogo sem prefixo db/rb", async 
   await laserButton.click();
   await expect.poll(() => payload).not.toBeNull();
   expect(payload.event_type).toBe("play");
-  expect(payload.station_slug).toBe("legacy-laser-fm-campinas");
+  expect(payload.station_slug).toBe("rb-legacy-laser-fm-campinas");
   expect(payload.station_name).toBe("Laser FM Campinas 93.3");
 });
 
