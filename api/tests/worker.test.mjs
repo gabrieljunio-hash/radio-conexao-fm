@@ -91,7 +91,7 @@ test("POST /api/events records legacy static-catalog stations in external audien
   const DB = mockDb();
   const response = await postEvent(DB, {
     event_type: "play",
-    station_slug: "legacy-laser-fm-campinas",
+    station_slug: "rb-legacy-laser-fm-campinas",
     station_name: "Laser FM Campinas 93.3",
     station_logo: "https://example.test/laser.png",
     session_id: SESSION
@@ -99,7 +99,7 @@ test("POST /api/events records legacy static-catalog stations in external audien
   assert.equal(response.status, 201);
   assert.deepEqual(await response.json(), { ok: true, recorded: true });
   const register = DB.calls.find(call => call.type === "run" && call.sql.includes("INSERT INTO audience_stations"));
-  assert.deepEqual(register.values, ["legacy-laser-fm-campinas", "Laser FM Campinas 93.3", "https://example.test/laser.png"]);
+  assert.deepEqual(register.values, ["rb-legacy-laser-fm-campinas", "Laser FM Campinas 93.3", "https://example.test/laser.png"]);
   const insert = DB.calls.find(call => call.type === "run" && call.sql.includes("INSERT INTO audience_events"));
   assert.deepEqual(insert.values, [42, "play", SESSION]);
 });
