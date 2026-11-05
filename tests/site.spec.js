@@ -216,3 +216,27 @@ test("início mostra somente histórico real e ranking por reproduções", async
   await expect(page.locator("#popularStations .popular-station")).toHaveCount(2);
   await expect(page.locator("#popularStations .popular-info").first()).toContainText("Rádio B");
 });
+
+
+test("ads.txt declara corretamente o vendedor AdSense do site", async ({ request }) => {
+  const response = await request.get("/ads.txt");
+  expect(response.status()).toBe(200);
+  const body = (await response.text()).trim();
+  expect(body).toBe("google.com, pub-9719336050584861, DIRECT, f08c47fec0942fa0");
+});
+
+test("página Anuncie é pública, indexável e possui contato comercial", async ({ page }) => {
+  await page.goto("/anuncie.html");
+  await expect(page).toHaveTitle(/Anuncie na Conexão FM/i);
+  await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", "https://radio-conexao-fm.pages.dev/anuncie.html");
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", "index,follow");
+  await expect(page.getByRole("link", { name: /Solicitar informações pelo WhatsApp/i })).toHaveAttribute("href", /^https:\/\/wa\.me\//);
+  await expect(page.locator("body")).toContainText("Patrocinado");
+});
+
+test("página Anuncie está incluída no sitemap e acessível pelo início", async ({ page, request }) => {
+  const xml = await (await request.get("/sitemap.xml")).text();
+  expect(xml).toContain("https://radio-conexao-fm.pages.dev/anuncie.html");
+  await page.goto("/");
+  await expect(page.getByRole("link", { name: "Anuncie" })).toHaveAttribute("href", "anuncie.html");
+});
