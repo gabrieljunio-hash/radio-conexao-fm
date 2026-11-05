@@ -355,6 +355,7 @@ async function loadCatalogFilters(){
   setCatalogOptions(countrySelect,catalogCountries,"Todos os países",item=>item.code,item=>countryFlag(item.code)+" "+item.name);
   setCatalogOptions(languageSelect,catalogLanguages,"Todos os idiomas",item=>item.code,item=>item.name);
   setCatalogOptions(genreSelect,catalogCategories,"Todos os gêneros",item=>item.slug,item=>item.name);
+  render();
  }catch(error){catalogFiltersLoaded=false;console.warn("Filtros do catálogo indisponíveis:",error)}
 }
 function catalogApiParams(offset){const f=catalogFilterValues(),params=new URLSearchParams({limit:"24",offset:String(offset)}),q=$("search").value.trim();if(q)params.set("q",q);if(f.country)params.set("country_code",f.country);if(f.language)params.set("language",f.language);if(f.region)params.set("region",f.region);if(f.city)params.set("city",f.city);if(f.category)params.set("category",f.category);if(f.verification)params.set("verification",f.verification);return params}
