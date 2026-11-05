@@ -308,7 +308,7 @@ function audienceKeyForStation(station){
  if(id.startsWith("db-")||id.startsWith("rb-"))return id;
  // Stations shipped in the original static catalog have no db-/rb- prefix.
  // Count only playable stations and namespace them in the external audience table.
- return station.streamUrl&&/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(id)?"legacy-"+id:"";
+ return station.streamUrl&&/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(id)?"rb-legacy-"+id:"";
 }
 function sendAudienceEvent(eventType,slug=trackedAudienceSlug){
  if(!slug)return;
