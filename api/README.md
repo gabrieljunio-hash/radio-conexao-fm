@@ -52,12 +52,13 @@ A publicação não altera o site Pages nem a branch `main`. Não remova o bindi
 
 - `GET /api/health` — verifica a conexão com D1.
 - `GET /api/stats?period=7d|30d` — retorna métricas agregadas de audiência, sessões estimadas, ranking e série diária.
-- `GET /api/categories` — lista categorias e quantidade de rádios associadas.
-- `GET /api/stations` — lista rádios ativas.
+- `GET /api/categories` — lista categorias e quantidade de rádios ativas associadas.
+- `GET /api/catalog/filters` — retorna países, idiomas, regiões, cidades e gêneros disponíveis no catálogo.
+- `GET /api/stations` — lista rádios ativas com filtros combináveis `q`, `category`, `country_code`, `language`, `region`, `city` e `verification` (`verified` ou `pending`), além de `limit` e `offset` para paginação.
 - `POST /api/events` — registra eventos agregados de reprodução para rádios do catálogo próprio. Recebe `event_type` (`play`, `stop` ou `heartbeat`), `station_slug` e `session_id` UUID v4.
 - `GET /api/promotions?placement=home|explorar|radio` — lista somente campanhas ativas dentro da vigência, sem expor métricas administrativas.
 - `POST /api/promotions/:id/event` — soma impressão ou clique, com limite de 60 eventos por IP/minuto via Cloudflare Rate Limiting; o IP é usado apenas como chave efêmera e não é gravado no D1.
-- Filtros de rádios: `q`, `category`, `state`, `city`, `limit` (máximo 100) e `offset`.
+- O filtro `language` aceita prefixos de idioma (por exemplo `pt`, `en`, `es`); `region` e `city` aceitam correspondência parcial sem diferenciar maiúsculas/minúsculas. `limit` é limitado a 100 e `offset` permite paginação.
 
 Exemplos:
 
