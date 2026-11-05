@@ -96,7 +96,7 @@ test("página individual encontra rádios depois das primeiras 100", async ({ pa
 
 
 test("página HTML individual entrega SEO sem depender de JavaScript", async ({ page }) => {
-  await page.goto("/radio/rb-f509ca0d-b4fd-44fa-bf88-5a20ddbc7e2d/");
+  await page.goto("/radio/rb-f509ca0d-b4fd-44fa-bf88-5a20ddbc7e2d/", { waitUntil: "domcontentloaded" });
   await expect(page.locator("h1")).toHaveText("012 Rock News");
   await expect(page).toHaveTitle(/012 Rock News ao vivo/);
   await expect(page.locator('meta[name="description"]')).toHaveAttribute("content", /012 Rock News/);
