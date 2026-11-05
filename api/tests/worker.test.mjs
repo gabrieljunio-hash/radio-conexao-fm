@@ -440,11 +440,11 @@ test("GET /api/stations combines country, language, region, city, genre and veri
   assert.deepEqual(data.pagination, { total: 1, limit: 10, offset: 20, has_more: false });
   const list = calls.find(call => call.type === "all");
   for (const fragment of [
-    "s.country_code = ?", "lower(s.language) = ?", "lower(s.state) = lower(?)",
+    "s.country_code = ?", "lower(s.language) LIKE ?", "lower(s.state) = lower(?)",
     "lower(s.city) = lower(?)", "filter_c.slug = ?", "s.is_verified = 1",
     "s.is_verified DESC"
   ]) assert.ok(list.sql.includes(fragment), "missing SQL filter: " + fragment);
-  assert.deepEqual(list.values, ["%jazz%", "%jazz%", "%jazz%", "%jazz%", "%jazz%", "US", "en", "NY", "New York", "rock", 10, 20]);
+  assert.deepEqual(list.values, ["%jazz%", "%jazz%", "%jazz%", "%jazz%", "%jazz%", "US", "en%", "NY", "New York", "rock", 10, 20]);
 });
 
 test("GET /api/stations supports pending verification filter and preserves pagination", async () => {
