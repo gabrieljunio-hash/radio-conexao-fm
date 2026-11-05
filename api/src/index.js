@@ -633,7 +633,7 @@ export default {
 
       if (url.pathname === "/api/categories") {
         const { results } = await env.DB.prepare(
-          `SELECT c.id, c.slug, c.name, COUNT(DISTINCT sc.station_id) AS station_count
+          `SELECT c.id, c.slug, c.name, COUNT(DISTINCT s.id) AS station_count
            FROM categories c
            LEFT JOIN station_categories sc ON sc.category_id = c.id
            LEFT JOIN stations s ON s.id = sc.station_id AND s.is_active = 1
