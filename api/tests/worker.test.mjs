@@ -407,3 +407,85 @@ test("promotion events fail closed when the rate limiter cannot identify the sou
   assert.equal(response.status, 503);
   assert.equal((await response.json()).error, "rate_limit_identity_unavailable");
 });
+
+
+test("GET /api/stations combines country, language, region, city, genre and verification filters", async () => {
+  const calls = [];
+  const DB = {
+    prepare(sql) {
+      return {
+        sql, values: [],
+        bind(...values) { this.values = values; return this; },
+        async first() { calls.push({ type: "first", sql: this.sql, values: this.values }); return { total: 1 }; },
+        async all() {
+          calls.push({ type: "all", sql: this.sql, values: this.values });
+          return { results: [{
+            id: 9, slug: "jazz-ny", name: "Jazz New York",
+            stream_url: "https://stream.example.test/live", country_code: "US",
+            state: "NY", city: "New York", language: "en",
+            is_verified: 1, category_slugs: "jazz-blues,rock"
+          }] };
+        }
+      };
+    }
+  };
+  const response = await worker.fetch(new Request(
+    "https://api.example.com/api/stations?q=jazz&country_code=US&language=EN&region=NY&city=New%20York&category=rock&verification=verified&limit=10&offset=20"
+  ), { DB });
+  assert.equal(response.status, 200);
+  const data = await response.json();
+  assert.equal(data.stations[0].country_code, "US");
+  assert.equal(data.stations[0].is_verified, true);
+  assert.deepEqual(data.stations[0].categories, ["jazz-blues", "rock"]);
+  assert.deepEqual(data.pagination, { total: 1, limit: 10, offset: 20, has_more: false });
+  const list = calls.find(call => call.type === "all");
+  for (const fragment of [
+    "s.country_code = ?", "lower(s.language) LIKE ?", "lower(s.state) LIKE ?",
+    "lower(s.city) LIKE ?", "filter_c.slug = ?", "s.is_verified = 1",
+    "s.is_verified DESC"
+  ]) assert.ok(list.sql.includes(fragment), "missing SQL filter: " + fragment);
+  assert.deepEqual(list.values, ["%jazz%", "%jazz%", "%jazz%", "%jazz%", "%jazz%", "US", "en%", "%ny%", "%new york%", "rock", 10, 20]);
+});
+
+test("GET /api/stations supports pending verification filter and preserves pagination", async () => {
+  const calls = [];
+  const DB = {
+    prepare(sql) {
+      return {
+        sql, values: [],
+        bind(...values) { this.values = values; return this; },
+        async first() { calls.push({ type: "first", sql: this.sql, values: this.values }); return { total: 2 }; },
+        async all() { calls.push({ type: "all", sql: this.sql, values: this.values }); return { results: [] }; }
+      };
+    }
+  };
+  const response = await worker.fetch(new Request("https://api.example.com/api/stations?verification=pending&limit=1&offset=1"), { DB });
+  const data = await response.json();
+  assert.equal(response.status, 200);
+  assert.equal(data.pagination.has_more, true);
+  assert.match(calls.find(call => call.type === "all").sql, /s\.is_verified = 0/);
+});
+
+test("GET /api/catalog/filters returns available country, language, region, city and genre facets", async () => {
+  const calls = [];
+  const DB = {
+    prepare(sql) {
+      return {
+        async all() {
+          calls.push(sql);
+          return { results: [] };
+        }
+      };
+    }
+  };
+  const response = await worker.fetch(new Request("https://api.example.com/api/catalog/filters"), { DB });
+  assert.equal(response.status, 200);
+  const data = await response.json();
+  assert.deepEqual(data, { countries: [], languages: [], regions: [], cities: [], categories: [] });
+  assert.equal(calls.length, 5);
+  assert.ok(calls.some(sql => sql.includes("GROUP BY country_code")));
+  assert.ok(calls.some(sql => sql.includes("GROUP BY language")));
+  assert.ok(calls.some(sql => sql.includes("GROUP BY country_code, state")));
+  assert.ok(calls.some(sql => sql.includes("GROUP BY country_code, state, city")));
+  assert.ok(calls.some(sql => sql.includes("GROUP BY c.id, c.slug, c.name")));
+});

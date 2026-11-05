@@ -633,9 +633,10 @@ export default {
 
       if (url.pathname === "/api/categories") {
         const { results } = await env.DB.prepare(
-          `SELECT c.id, c.slug, c.name, COUNT(DISTINCT sc.station_id) AS station_count
+          `SELECT c.id, c.slug, c.name, COUNT(DISTINCT s.id) AS station_count
            FROM categories c
            LEFT JOIN station_categories sc ON sc.category_id = c.id
+           LEFT JOIN stations s ON s.id = sc.station_id AND s.is_active = 1
            GROUP BY c.id, c.slug, c.name
            ORDER BY c.name COLLATE NOCASE`
         ).all();
@@ -643,11 +644,31 @@ export default {
         return json({ categories: results || [] }, 200, origin);
       }
 
+      if (url.pathname === "/api/catalog/filters") {
+        const [countries, languages, regions, cities, categories] = await Promise.all([
+          env.DB.prepare("SELECT country_code AS code, COUNT(*) AS station_count FROM stations WHERE is_active = 1 GROUP BY country_code ORDER BY station_count DESC, country_code").all(),
+          env.DB.prepare("SELECT language AS code, COUNT(*) AS station_count FROM stations WHERE is_active = 1 AND language IS NOT NULL AND trim(language) <> '' GROUP BY language ORDER BY station_count DESC, language").all(),
+          env.DB.prepare("SELECT country_code, state AS name, COUNT(*) AS station_count FROM stations WHERE is_active = 1 AND state IS NOT NULL AND trim(state) <> '' GROUP BY country_code, state ORDER BY station_count DESC, state LIMIT 100").all(),
+          env.DB.prepare("SELECT country_code, state, city AS name, COUNT(*) AS station_count FROM stations WHERE is_active = 1 AND city IS NOT NULL AND trim(city) <> '' GROUP BY country_code, state, city ORDER BY station_count DESC, city LIMIT 150").all(),
+          env.DB.prepare("SELECT c.slug, c.name, COUNT(DISTINCT s.id) AS station_count FROM categories c LEFT JOIN station_categories sc ON sc.category_id = c.id LEFT JOIN stations s ON s.id = sc.station_id AND s.is_active = 1 GROUP BY c.id, c.slug, c.name ORDER BY c.name COLLATE NOCASE").all()
+        ]);
+        return json({
+          countries: countries.results || [],
+          languages: languages.results || [],
+          regions: regions.results || [],
+          cities: cities.results || [],
+          categories: categories.results || []
+        }, 200, origin);
+      }
+
       if (url.pathname === "/api/stations") {
         const q = (url.searchParams.get("q") || "").trim().slice(0, 100);
         const category = (url.searchParams.get("category") || "").trim().slice(0, 80);
-        const state = (url.searchParams.get("state") || "").trim().slice(0, 80);
+        const countryCode = (url.searchParams.get("country_code") || url.searchParams.get("country") || "").trim().toUpperCase().slice(0, 2);
+        const language = (url.searchParams.get("language") || "").trim().toLowerCase().slice(0, 20);
+        const state = (url.searchParams.get("region") || url.searchParams.get("state") || "").trim().slice(0, 80);
         const city = (url.searchParams.get("city") || "").trim().slice(0, 100);
+        const verification = (url.searchParams.get("verification") || "").trim().toLowerCase();
         const limit = getPositiveInt(url.searchParams.get("limit"), 30, 100) || 30;
         const offset = getPositiveInt(url.searchParams.get("offset"), 0, 100000);
 
@@ -655,17 +676,26 @@ export default {
         const bindings = [];
 
         if (q) {
-          conditions.push("(s.name LIKE ? OR s.city LIKE ? OR s.state LIKE ?)");
-          const term = `%${q.replace(/[\\%_]/g, "\\$&")}%`;
-          bindings.push(term, term, term);
+          conditions.push("(s.name LIKE ? OR s.city LIKE ? OR s.state LIKE ? OR s.country_code LIKE ? OR s.language LIKE ?)");
+          const term = "%" + q.replace(/[\\%_]/g, character => "\\" + character) + "%";
+          bindings.push(term, term, term, term, term);
+        }
+        if (countryCode && /^[A-Z]{2}$/.test(countryCode)) {
+          conditions.push("s.country_code = ?");
+          bindings.push(countryCode);
+        }
+        if (language) {
+          conditions.push("lower(s.language) LIKE ?");
+          const languagePrefix = ({ portuguese: "pt", english: "en", spanish: "es", french: "fr", german: "de", italian: "it" })[language] || language.split("-")[0];
+          bindings.push(languagePrefix + "%");
         }
         if (state) {
-          conditions.push("s.state = ?");
-          bindings.push(state);
+          conditions.push("lower(s.state) LIKE ?");
+          bindings.push("%" + state.toLowerCase() + "%");
         }
         if (city) {
-          conditions.push("s.city = ?");
-          bindings.push(city);
+          conditions.push("lower(s.city) LIKE ?");
+          bindings.push("%" + city.toLowerCase() + "%");
         }
         if (category) {
           conditions.push(`EXISTS (
@@ -675,6 +705,11 @@ export default {
           )`);
           bindings.push(category);
         }
+        if (verification === "verified") {
+          conditions.push("s.is_verified = 1");
+        } else if (verification === "pending") {
+          conditions.push("s.is_verified = 0");
+        }
 
         const where = conditions.join(" AND ");
         const countQuery = env.DB.prepare(
@@ -683,13 +718,14 @@ export default {
         const listQuery = env.DB.prepare(
           `SELECT s.id, s.slug, s.name, s.stream_url, s.website_url, s.logo_url,
                   s.country_code, s.state, s.city, s.language, s.description,
+                  s.is_verified,
                   GROUP_CONCAT(c.slug) AS category_slugs
            FROM stations s
            LEFT JOIN station_categories sc ON sc.station_id = s.id
            LEFT JOIN categories c ON c.id = sc.category_id
            WHERE ${where}
            GROUP BY s.id
-           ORDER BY s.name COLLATE NOCASE
+           ORDER BY s.is_verified DESC, s.name COLLATE NOCASE
            LIMIT ? OFFSET ?`
         );
 
@@ -700,16 +736,16 @@ export default {
 
         const stations = (listResult.results || []).map((station) => {
           const { category_slugs, ...rest } = station;
-          return { ...rest, categories: category_slugs ? category_slugs.split(",") : [] };
+          return { ...rest, is_verified: Number(rest.is_verified) === 1, categories: category_slugs ? category_slugs.split(",") : [] };
         });
 
         return json({
           stations,
           pagination: {
-            total: countResult?.total || 0,
+            total: Number(countResult?.total || 0),
             limit,
             offset,
-            has_more: offset + stations.length < (countResult?.total || 0),
+            has_more: offset + stations.length < Number(countResult?.total || 0),
           },
         }, 200, origin);
       }
