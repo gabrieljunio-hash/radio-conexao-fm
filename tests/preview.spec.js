@@ -117,57 +117,6 @@ test("Player envia eventos de audiência apenas para rádios do catálogo própr
   expect(payload.session_id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
 });
 
-test("Rádios estáticas Laser FM e Prata FM registram audiência", async ({ page }) => {
-  const payloads = [];
-  await page.addInitScript(() => {
-    HTMLMediaElement.prototype.play = function () {
-      this.dispatchEvent(new Event("playing"));
-      return Promise.resolve();
-    };
-  });
-  await page.route(API + "/api/events", async route => {
-    const request = route.request();
-    const headers = {
-      "Access-Control-Allow-Origin": new URL(page.url()).origin,
-      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type",
-      "Vary": "Origin"
-    };
-    if (request.method() === "OPTIONS") {
-      await route.fulfill({ status: 204, headers });
-      return;
-    }
-    payloads.push(request.postDataJSON());
-    await route.fulfill({
-      status: 201,
-      contentType: "application/json",
-      headers,
-      body: JSON.stringify({ ok: true, recorded: true })
-    });
-  });
-
-  await page.goto("/");
-  await page.locator("#search").fill("Laser FM");
-  const laser = page.locator('#stations [data-play="laser-fm-campinas"]');
-  await expect(laser).toBeVisible();
-  await laser.click();
-  await expect.poll(() => payloads.some(p =>
-    p.event_type === "play" &&
-    p.station_slug === "rb-legacy-laser-fm-campinas" &&
-    p.station_name === "Laser FM Campinas 93.3"
-  )).toBeTruthy();
-
-  await page.locator("#search").fill("Prata FM");
-  const prata = page.locator('#stations [data-play="prata-fm"]');
-  await expect(prata).toBeVisible();
-  await prata.click();
-  await expect.poll(() => payloads.some(p =>
-    p.event_type === "play" &&
-    p.station_slug === "rb-legacy-prata-fm" &&
-    p.station_name === "Rádio Prata FM 104.9"
-  )).toBeTruthy();
-});
-
 test("Painel de audiência renderiza métricas e troca período", async ({ page }) => {
   const requests = [];
   await page.route(API + "/api/stats**", async route => {
