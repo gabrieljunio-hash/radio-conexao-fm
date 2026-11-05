@@ -312,13 +312,14 @@ test("explorar combina país, idioma e gênero, mostra bandeira e carrega mais r
     const filtered = url.searchParams.get("country_code") === "US";
     route.fulfill({
       status: 200, contentType: "application/json", body: JSON.stringify({
-        stations: filtered && offset === 0 ? [{
-          slug: "radio-rock-us", name: "Rock USA FM",
-          stream_url: "https://stream.example.test/db-us", logo_url: "",
-          country_code: "US", state: "New York", city: "New York",
-          language: "en-US", description: "Rock", is_verified: 1,
+        stations: filtered && offset === 0 ? Array.from({ length: 24 }, (_, index) => ({
+          slug: index === 0 ? "radio-rock-us" : "radio-rock-us-" + index,
+          name: index === 0 ? "Rock USA FM" : "Rock USA FM " + index,
+          stream_url: "https://stream.example.test/db-us-" + index, logo_url: "",
+          country_code: "US", state: "New York", city: index === 0 ? "New York" : "Albany",
+          language: "en-US", description: "Rock", is_verified: index === 0 ? 1 : 0,
           categories: ["rock"]
-        }] : offset === 24 ? [{
+        })) : offset === 24 ? [{
           slug: "radio-rock-us-2", name: "Rock USA FM 2",
           stream_url: "https://stream.example.test/db-us-2", logo_url: "",
           country_code: "US", state: "New York", city: "Buffalo",
