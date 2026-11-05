@@ -421,3 +421,40 @@ test("rádios sem logotipo exibem arte neutra em vez de capa vazia", async ({ pa
   await expect(station.locator(".cover-fallback")).toBeVisible();
   await expect(station.locator(".station-logo")).toHaveCount(0);
 });
+
+
+test("link da página SEO abre a rádio no player fixo mesmo fora das primeiras 24", async ({ page }) => {
+  await page.addInitScript(() => {
+    HTMLMediaElement.prototype.play = function () { return Promise.resolve(); };
+  });
+  await page.route("**/data/radio-status.json", route => route.fulfill({
+    status: 200, contentType: "application/json", body: JSON.stringify({ stations: [] })
+  }));
+  const requests = [];
+  await page.route("https://radio-conexao-api.bieljuniho.workers.dev/api/stations**", async route => {
+    const url = new URL(route.request().url());
+    const limit = Number(url.searchParams.get("limit") || 24);
+    const offset = Number(url.searchParams.get("offset") || 0);
+    requests.push({ limit, offset });
+    const station = (slug, name) => ({
+      slug, name, stream_url: "https://stream.example.test/live",
+      logo_url: "", website_url: "", city: "Campinas", state: "SP",
+      description: "Rádio usada no teste", categories: ["pop"]
+    });
+    if (limit === 24) {
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({
+        stations: [station("outra-radio", "Outra Rádio")],
+        pagination: { total: 101, limit: 24, offset: 0, has_more: true }
+      }) });
+      return;
+    }
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({
+      stations: [station("radio-detalhe", "Rádio do Detalhe")],
+      pagination: { total: 101, limit: 100, offset, has_more: false }
+    }) });
+  });
+  await page.goto("/?station=db-radio-detalhe&autoplay=1");
+  await expect(page.locator("#playerName")).toHaveText("Rádio do Detalhe");
+  await expect(page.locator("#audio")).toHaveAttribute("src", "https://stream.example.test/live");
+  expect(requests.some(item => item.limit === 100 && item.offset === 0)).toBeTruthy();
+});
