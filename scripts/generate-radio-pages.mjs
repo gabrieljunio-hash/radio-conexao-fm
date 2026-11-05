@@ -32,24 +32,38 @@ export function buildStationPage(station) {
   const country = station.country_code === "BR" ? "Brasil" : (station.country_code || "Rádio online");
   const location = [city, country].filter(Boolean).join(" · ");
   const categories = Array.isArray(station.categories) ? station.categories : [];
-  const description = String(station.description || `Ouça ${name} ao vivo pela Conexão FM. Descubra esta rádio online e conheça sua programação.`).trim();
+  const description = String(station.description || "").trim();
+  const language = String(station.language || "").trim();
+  const categoriesText = categories.map(value => String(value).replace(/-/g, " ")).join(", ");
+  const metaParts = [`Ouça ${name} ao vivo na Conexão FM.`, location, categoriesText ? `Estilos: ${categoriesText}.` : "", description].filter(Boolean);
+  const metaDescription = metaParts.join(" ").slice(0, 155);
   const canonical = `${SITE}/radio/${slug}/`;
   const logo = safeHttps(station.logo_url);
   const website = safeHttps(station.website_url);
   const title = `${name} ao vivo — Ouvir rádio online | Conexão FM`;
-  const metaDescription = `Ouça ${name} ao vivo na Conexão FM. ${location}. Rádio online`.slice(0, 155);
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "RadioStation",
     "name": name,
-    "description": description,
+    ...(description ? { "description": description } : {}),
+    ...(categories.length ? { "genre": categories } : {}),
+    ...(language ? { "inLanguage": language } : {}),
     "url": canonical,
     ...(logo ? { "image": logo } : {}),
     ...(city ? { "address": { "@type": "PostalAddress", "addressLocality": station.city || undefined, "addressRegion": station.state || undefined, "addressCountry": station.country_code || undefined } } : {}),
-    "broadcastDisplayName": name
+    "broadcastDisplayName": name,
+    ...(website ? { "sameAs": [website] } : {})
   };
   const json = JSON.stringify(jsonLd).replace(/</g, "\\u003c");
   const tags = categories.map(category => `<li>${escapeHtml(category.replace(/-/g, " "))}</li>`).join("");
+  const facts = [
+    city ? ["Cidade", city] : null,
+    station.state && !city ? ["Estado", station.state] : null,
+    country ? ["País", country] : null,
+    language ? ["Idioma", language] : null,
+    categoriesText ? ["Estilos musicais", categoriesText] : null
+  ].filter(Boolean);
+  const factsMarkup = facts.length ? `<section class="details" aria-labelledby="details-title"><h2 id="details-title">Informações da emissora</h2><dl>${facts.map(([label, value]) => `<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`).join("")}</dl></section>` : "";
   const logoMarkup = logo
     ? `<img class="logo" src="${escapeHtml(logo)}" alt="Logotipo de ${escapeHtml(name)}" width="112" height="112">`
     : '<div class="logo-placeholder" aria-hidden="true">♫</div>';
@@ -74,7 +88,7 @@ export function buildStationPage(station) {
 ${logo ? `<meta property="og:image" content="${escapeHtml(logo)}">` : ""}
 <script type="application/ld+json">${json}</script>
 <style>
-*{box-sizing:border-box}body{margin:0;background:#f5f4ef;color:#17213a;font:16px/1.6 system-ui,-apple-system,sans-serif}.wrap{width:min(760px,calc(100% - 28px));margin:28px auto 70px}.back{display:inline-block;padding:10px 14px;border:1px solid #17213a26;border-radius:12px;background:#fff;color:#17213a;text-decoration:none;font-weight:700}.card{margin-top:20px;padding:clamp(22px,5vw,40px);border:1px solid #17213a20;border-radius:22px;background:#fff;box-shadow:0 12px 36px #17213a0c}.brand{color:#e66b55;font-size:13px;font-weight:800;letter-spacing:.05em}.logo{display:block;width:112px;height:112px;margin:22px 0 18px;object-fit:contain;border-radius:22px;background:#f1eee9}.logo-placeholder{display:grid;place-items:center;width:112px;height:112px;margin:22px 0 18px;border-radius:22px;background:#f1eee9;color:#e66b55;font-size:40px}h1{margin:0 0 8px;font-size:clamp(26px,6vw,38px);line-height:1.2;overflow-wrap:anywhere}.location{margin:0;color:#59657c}.description{margin:22px 0;color:#344057}.tags{display:flex;flex-wrap:wrap;gap:8px;padding:0;list-style:none}.tags li{padding:6px 11px;border-radius:999px;background:#f1eee9;font-size:13px}.listen{display:inline-flex;align-items:center;justify-content:center;min-height:48px;margin-top:18px;padding:10px 18px;border-radius:12px;background:#17213a;color:#fff;text-decoration:none;font-weight:800}.website{display:block;margin-top:16px;color:#344057}.footer{margin-top:22px;text-align:center;color:#59657c;font-size:13px}.footer a{color:inherit}@media(max-width:520px){.wrap{margin-top:16px}.card{border-radius:17px}}
+*{box-sizing:border-box}body{margin:0;background:#f5f4ef;color:#17213a;font:16px/1.6 system-ui,-apple-system,sans-serif}.wrap{width:min(760px,calc(100% - 28px));margin:28px auto 70px}.back{display:inline-block;padding:10px 14px;border:1px solid #17213a26;border-radius:12px;background:#fff;color:#17213a;text-decoration:none;font-weight:700}.card{margin-top:20px;padding:clamp(22px,5vw,40px);border:1px solid #17213a20;border-radius:22px;background:#fff;box-shadow:0 12px 36px #17213a0c}.brand{color:#e66b55;font-size:13px;font-weight:800;letter-spacing:.05em}.logo{display:block;width:112px;height:112px;margin:22px 0 18px;object-fit:contain;border-radius:22px;background:#f1eee9}.logo-placeholder{display:grid;place-items:center;width:112px;height:112px;margin:22px 0 18px;border-radius:22px;background:#f1eee9;color:#e66b55;font-size:40px}h1{margin:0 0 8px;font-size:clamp(26px,6vw,38px);line-height:1.2;overflow-wrap:anywhere}.location{margin:0;color:#59657c}.description{margin:22px 0;color:#344057}.tags{display:flex;flex-wrap:wrap;gap:8px;padding:0;list-style:none}.tags li{padding:6px 11px;border-radius:999px;background:#f1eee9;font-size:13px}.details{margin-top:26px;padding-top:20px;border-top:1px solid #17213a18}.details h2,.about h2{font-size:19px;margin:0 0 12px}.details dl{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin:0}.details dl div{padding:12px;border-radius:12px;background:#f5f4ef}.details dt{font-size:12px;color:#59657c}.details dd{margin:3px 0 0;font-weight:700;overflow-wrap:anywhere}.about{margin-top:24px}.about p{margin:0;color:#344057}.listen{display:inline-flex;align-items:center;justify-content:center;min-height:48px;margin-top:18px;padding:10px 18px;border-radius:12px;background:#17213a;color:#fff;text-decoration:none;font-weight:800}.website{display:block;margin-top:16px;color:#344057}.footer{margin-top:22px;text-align:center;color:#59657c;font-size:13px}.footer a{color:inherit}@media(max-width:520px){.wrap{margin-top:16px}.card{border-radius:17px}}
 </style>
 </head>
 <body>
@@ -86,8 +100,9 @@ ${logoMarkup}
 <h1>${escapeHtml(name)}</h1>
 <p class="location">${escapeHtml(location || "Rádio online")}</p>
 ${tags ? `<ul class="tags" aria-label="Estilos musicais">${tags}</ul>` : ""}
-<p class="description">${escapeHtml(description)}</p>
-<a class="listen" href="/radio.html?station=${encodeURIComponent(slug)}">▶ Ouvir esta rádio</a>
+${description ? `<section class="about" aria-labelledby="about-title"><h2 id="about-title">Sobre a ${escapeHtml(name)}</h2><p class="description">${escapeHtml(description)}</p></section>` : `<p class="description">Esta página reúne os dados disponíveis no catálogo da Conexão FM para identificar a emissora e facilitar o acesso à transmissão online.</p>`}
+${factsMarkup}
+<a class="listen" href="/?station=${encodeURIComponent("db-" + slug)}&amp;autoplay=1">▶ Ouvir no player da Conexão FM</a>
 ${website ? `<a class="website" href="${escapeHtml(website)}" target="_blank" rel="noopener noreferrer">Visitar o site da emissora ↗</a>` : ""}
 </article>
 <footer class="footer">Conexão FM — A música que conecta você · <a href="/privacidade.html">Privacidade</a> · <a href="/contato.html">Contato</a></footer>
