@@ -1,4 +1,5 @@
 name = "radio-conexao-api"
+account_id = "32a93f391ed5a31ed84f4f59aee2c771"
 main = "src/index.js"
 compatibility_date = "2026-11-01"
 workers_dev = true
