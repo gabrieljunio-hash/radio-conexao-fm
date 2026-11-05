@@ -65,6 +65,35 @@ test("detalhes da rádio usam o player fixo sem criar outro áudio", async ({ pa
   expect(await page.evaluate(() => window.__persistentAudioNode === document.getElementById("audio"))).toBeTruthy();
 });
 
+
+test("página individual encontra rádios depois das primeiras 100", async ({ page }) => {
+  const offsets = [];
+  await page.route("https://radio-conexao-api.bieljuniho.workers.dev/api/stations**", async route => {
+    const url = new URL(route.request().url());
+    const offset = Number(url.searchParams.get("offset") || 0);
+    offsets.push(offset);
+    if (offset === 0) {
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({
+        stations: [],
+        pagination: { total: 101, limit: 100, offset: 0, has_more: true }
+      }) });
+      return;
+    }
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({
+      stations: [{
+        slug: "radio-posicao-101", name: "Rádio da Posição 101",
+        stream_url: "https://stream.example.test/live", logo_url: "",
+        website_url: "", city: "Campinas", state: "SP",
+        description: "Estação de teste", categories: ["pop"]
+      }],
+      pagination: { total: 101, limit: 100, offset: 100, has_more: false }
+    }) });
+  });
+  await page.goto("/radio.html?station=radio-posicao-101");
+  await expect(page.locator("#radioCard h1")).toHaveText("Rádio da Posição 101");
+  expect(offsets).toEqual([0, 100]);
+});
+
 test("páginas de explorar e favoritos mantêm a navegação", async ({ page }) => {
   await page.goto("/radios.html");
   await expect(page.locator("#exploreCategories")).toBeVisible();
