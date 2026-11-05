@@ -460,11 +460,13 @@ export default {
         return json({ error: "invalid_session_id" }, 400, origin);
       }
 
-      const isExternal = stationSlug.startsWith("rb-");
+      const isExternal = stationSlug.startsWith("rb-") || stationSlug.startsWith("legacy-");
       if (isExternal) {
         const stationName = String(payload?.station_name || "").trim().slice(0, 120);
         const logoUrl = payload?.station_logo ? safePublicUrl(payload.station_logo) : null;
-        if (!/^rb-[A-Za-z0-9%_.!~*'()-]{1,100}$/.test(stationSlug) || stationName.length < 2) {
+        const validExternalKey = /^rb-[A-Za-z0-9%_.!~*'()-]{1,100}$/.test(stationSlug)
+          || /^legacy-[a-z0-9]+(?:-[a-z0-9]+)*$/.test(stationSlug);
+        if (!validExternalKey || stationName.length < 2) {
           return json({ error: "invalid_external_station" }, 400, origin);
         }
         await env.DB.prepare(
