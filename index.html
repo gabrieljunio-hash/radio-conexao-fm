@@ -165,9 +165,10 @@ async function loadLiveStations(){
   // Carrega emissoras cadastradas na API própria (Cloudflare Worker + D1).
   // Se a API estiver indisponível, o catálogo comunitário e os favoritos continuam funcionando.
   try{
-   const apiResponse=await fetch("https://radio-conexao-api.bieljuniho.workers.dev/api/stations?limit=100",{cache:"no-store"});
+   const apiResponse=await fetch("https://radio-conexao-api.bieljuniho.workers.dev/api/stations?limit=24",{cache:"no-store"});
    if(apiResponse.ok){
     const apiData=await apiResponse.json();
+    catalogApiOffset=Number(apiData.pagination?.offset||0)+(apiData.stations||[]).length;catalogApiHasMore=!!apiData.pagination?.has_more;
     const categoryNames={"sertanejo":"Sertanejo","gospel":"Gospel","noticias":"Notícias","esportes":"Esportes","pop":"Pop","rock":"Rock","flashback":"Flashback","adulto-contemporaneo":"Adulto contemporâneo","popular":"Popular","regional":"Regional"};
     for(const item of (apiData.stations||[])){
      const id="db-"+String(item.slug||item.id||"").trim();
@@ -177,10 +178,10 @@ async function loadLiveStations(){
      try{const parsed=new URL(String(item.stream_url||""));if(parsed.protocol==="https:")streamUrl=parsed.href}catch{}
      const categorySlugs=Array.isArray(item.categories)?item.categories.map(value=>String(value||"").trim()).filter(Boolean):String(item.category_slugs||"").split(",").filter(Boolean);
      const genre=categoryNames[categorySlugs[0]]||"Rádio online";
-     const city=[item.city,item.state].filter(Boolean).join(", ")||"Brasil";
+     const city=[item.city,item.state].filter(Boolean).join(", ")||"Brasil";const countryCode=String(item.country_code||"BR").toUpperCase();
      const favicon=safeImageUrl(item.logo_url||"");
      const cover=genre==="Sertanejo"?"corange":genre==="Flashback"?"cgold":genre==="Notícias"?"cblue":genre==="Gospel"?"cgreen":genre==="Rock"?"cteal":"cpink";
-     RADIO_STATIONS.push({id,name,city,genre,tagline:String(item.description||"Rádio online"),streamUrl,websiteUrl:safeImageUrl(item.website_url||""),favicon,cover,initials:name.split(/\s+/).slice(0,3).map(w=>w[0]).join("").toUpperCase().slice(0,5),verified:false,homepageEligible:false,favoriteCount:0,rank:999999,source:"api"});
+     RADIO_STATIONS.push({id,name,city,cityRaw:String(item.city||""),state:String(item.state||""),countryCode,language:String(item.language||""),categorySlugs,genre,tagline:String(item.description||"Rádio online"),streamUrl,websiteUrl:safeImageUrl(item.website_url||""),favicon,cover,initials:name.split(/\s+/).slice(0,3).map(w=>w[0]).join("").toUpperCase().slice(0,5),verified:false,isVerified:item.is_verified===true||Number(item.is_verified)===1,homepageEligible:false,favoriteCount:0,rank:999999,source:"api"});
      seenIds.add(id);
     }
    }
