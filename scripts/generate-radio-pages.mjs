@@ -16,7 +16,11 @@ export function escapeHtml(value = "") {
 function safeHttps(value) {
   try {
     const url = new URL(String(value || ""));
-    return url.protocol === "https:" ? url.href : "";
+    const host = url.hostname.toLowerCase();
+    if (url.protocol !== "https:" || !host || host === "localhost" || host.endsWith(".localhost") || host.endsWith(".local")) return "";
+    if (/^(127\\.|10\\.|192\\.168\\.|169\\.254\\.)/.test(host) || /^172\\.(1[6-9]|2\\d|3[01])\\./.test(host) || /^\\[?(::1|fc|fd|fe80:)/i.test(host)) return "";
+    if (/^\\d{1,3}(?:\\.\\d{1,3}){3}$/.test(host)) return "";
+    return url.href;
   } catch {
     return "";
   }
@@ -114,6 +118,8 @@ async function fetchOfficialPage(url, fetchImpl) {
     if (!response.ok || !/text\/html|application\/xhtml\+xml/i.test(response.headers.get("content-type") || "")) return null;
     const finalUrl = new URL(response.url || target.href);
     if (finalUrl.protocol !== "https:" || finalUrl.hostname !== target.hostname) return null;
+    const contentLength = Number(response.headers.get("content-length") || 0);
+    if (contentLength > 700000) return null;
     const html = await response.text();
     if (!html || html.length > 700000) return null;
     return { html, url: finalUrl.href };
@@ -122,8 +128,26 @@ async function fetchOfficialPage(url, fetchImpl) {
   }
 }
 
+async function findDirectoryWebsite(station, fetchImpl) {
+  const match = String(station.slug || "").match(/^rb-([a-f0-9-]{36})$/i);
+  if (!match) return "";
+  try {
+    const response = await fetchImpl("https://all.api.radio-browser.info/json/stations/byuuid/" + match[1], {
+      headers: { Accept: "application/json", "User-Agent": "ConexaoFM-RadioInfoBot/1.0" },
+      signal: AbortSignal.timeout(7000)
+    });
+    if (!response.ok || !/application\/json/i.test(response.headers.get("content-type") || "")) return "";
+    const data = await response.json();
+    const record = Array.isArray(data) ? data[0] : data;
+    return safeHttps(record?.homepage);
+  } catch {
+    return "";
+  }
+}
+
 export async function enrichStation(station, fetchImpl = fetch) {
-  const website = safeHttps(station.website_url);
+  let website = safeHttps(station.website_url);
+  if (!website) website = await findDirectoryWebsite(station, fetchImpl);
   if (!website) return { ...station, enrichment: null };
   const currentDescription = cleanText(station.description, 500);
   const needsMore = currentDescription.length < 120 || !station.city || !station.state;
