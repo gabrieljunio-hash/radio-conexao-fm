@@ -3,6 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const SITE = "https://radio-conexao-fm.pages.dev";
+// Automatic enrichment runs during every scheduled or code-triggered generation.
 const API = process.env.RADIO_API_URL || "https://radio-conexao-api.bieljuniho.workers.dev";
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const OUTPUT = path.join(ROOT, "radio");
