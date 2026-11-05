@@ -117,6 +117,31 @@ test("Player envia eventos de audiência apenas para rádios do catálogo própr
   expect(payload.session_id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
 });
 
+test("Player contabiliza rádios antigas do catálogo sem prefixo db/rb", async ({ page }) => {
+  let payload = null;
+  await page.addInitScript(() => {
+    localStorage.setItem("conexao-fm-data-saver", "0");
+    HTMLMediaElement.prototype.play = function () {
+      this.dispatchEvent(new Event("playing"));
+      return Promise.resolve();
+    };
+  });
+  await page.route(API + "/api/events", async route => {
+    if (route.request().method() === "OPTIONS") {
+      await route.fulfill({ status: 204, headers: { "Access-Control-Allow-Origin": "https://feature-home-recent-popular.radio-conexao-fm.pages.dev" } });
+      return;
+    }
+    payload = route.request().postDataJSON();
+    await route.fulfill({ status: 201, contentType: "application/json", body: JSON.stringify({ ok: true, recorded: true }) });
+  });
+  await page.goto("/");
+  await page.evaluate(() => play("laser-fm-campinas"));
+  await expect.poll(() => payload).not.toBeNull();
+  expect(payload.event_type).toBe("play");
+  expect(payload.station_slug).toBe("legacy-laser-fm-campinas");
+  expect(payload.station_name).toBe("Laser FM Campinas 93.3");
+});
+
 test("Painel de audiência renderiza métricas e troca período", async ({ page }) => {
   const requests = [];
   await page.route(API + "/api/stats**", async route => {
