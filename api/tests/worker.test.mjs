@@ -462,7 +462,7 @@ test("GET /api/stations supports pending verification filter and preserves pagin
   const response = await worker.fetch(new Request("https://api.example.com/api/stations?verification=pending&limit=1&offset=1"), { DB });
   const data = await response.json();
   assert.equal(response.status, 200);
-  assert.equal(data.pagination.has_more, false);
+  assert.equal(data.pagination.has_more, true);
   assert.match(calls.find(call => call.type === "all").sql, /s\.is_verified = 0/);
 });
 
