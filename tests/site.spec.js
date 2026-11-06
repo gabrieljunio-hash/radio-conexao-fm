@@ -544,6 +544,7 @@ test("categorias do Explorar consultam o catálogo pela categoria real", async (
     });
   });
   await page.goto("/index.html?view=explorar");
+  await expect(page.locator("#genreFilter option[value='mpb']")).toHaveText("MPB");
   await page.locator('#exploreCategories [data-genre="MPB"]').click();
   await expect.poll(() => requests.some(url => url.searchParams.get("category") === "mpb")).toBeTruthy();
   await expect(page.locator("#stations")).toContainText("Rádio MPB Teste");
