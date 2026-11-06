@@ -26,12 +26,14 @@ test("gera página individual com SEO e conteúdo visível antes do JavaScript",
   assert.match(html, /rel="canonical" href="https:\/\/radio-conexao-fm\.pages\.dev\/radio\/radio-teste\//);
   assert.match(html, /application\/ld\+json/);
   assert.match(html, /<style id="radio-page-styles">[\s\S]*\.listen\{[\s\S]*<\/style>/);
-  assert.match(html, /<h1>Rádio &lt;Teste&gt; &amp; Cia<\/h1>\s*<a class="listen" href="\/\?station=db-radio-teste&amp;autoplay=1&amp;openPlayer=1">▶ Ouvir rádio<\/a>/);
+  assert.match(html, /<h1>Rádio &lt;Teste&gt; &amp; Cia<\/h1>\s*<button class="listen" type="button" data-open-station-player data-station-id="db-radio-teste">▶ Ouvir rádio<\/button>/);
   assert.match(html, /Campinas, SP/);
   assert.match(html, /Sobre a Rádio &lt;Teste&gt; &amp; Cia/);
   assert.match(html, /Informações da emissora/);
   assert.match(html, /Estilos musicais/);
-  assert.match(html, /\/?\?station=db-radio-teste&amp;autoplay=1&amp;openPlayer=1/);
+  assert.match(html, /stationPlayerOverlay/);
+  assert.match(html, /frame\.src="\/?\?station="\+encodeURIComponent\(id\)\+"&autoplay=1&openPlayer=1"/);
+  assert.match(html, /station-player-frame/);
   assert.doesNotMatch(html, /radio\.html\?station=/);
   assert.match(html, /https:\/\/example\.com\/logo\.png/);
 });
