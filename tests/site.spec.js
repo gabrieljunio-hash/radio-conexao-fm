@@ -25,7 +25,7 @@ test("player permanece montado ao abrir páginas internas e trocar de seção", 
   await expect(page.frameLocator("#persistentPageFrame").locator("h1")).toHaveText("Painel de audiência");
   expect(await page.evaluate(() => window.__persistentAudioNode === document.getElementById("audio"))).toBeTruthy();
 
-  await page.locator("#persistentPageClose").click();
+  await page.goBack();
   await expect(page.locator("#persistentPageOverlay")).toBeHidden();
   await page.locator('.sidebar .nav a[href="radios.html"]').click();
   await expect(page).toHaveURL(/radios\.html$/);
@@ -374,7 +374,7 @@ test("explorar combina país, idioma e gênero, mostra bandeira e carrega mais r
       tags: "rock", favicon: "", lastcheckok: 1, bitrate: 128
     }])
   }));
-  await page.route("https://radio-conexao-api.bieljuniho.workers.dev/api/stations**", route => {
+  await page.route("**/api/stations**", route => {
     const url = new URL(route.request().url());
     stationRequests.push(url);
     const offset = Number(url.searchParams.get("offset") || 0);
@@ -507,4 +507,45 @@ test("links antigos de rádios abrem uma página estilizada e recuperam dados sa
   await expect(page.locator(".radio-card h1")).toHaveText("Rádio salva para teste");
   await expect(page.locator("#listen")).toBeVisible();
   await expect(page.locator(".radio-card")).toBeVisible();
+});
+
+
+test("categorias do Explorar consultam o catálogo pela categoria real", async ({ page }) => {
+  const requests = [];
+  await page.route("**/data/radio-status.json", route => route.fulfill({
+    status: 200, contentType: "application/json", body: JSON.stringify({ stations: [] })
+  }));
+  await page.route("https://radio-conexao-api.bieljuniho.workers.dev/api/catalog/filters", route => route.fulfill({
+    status: 200, contentType: "application/json", body: JSON.stringify({
+      countries: [{ code: "BR", station_count: 1 }],
+      languages: [{ code: "pt", station_count: 1 }],
+      regions: [], cities: [],
+      categories: [{ slug: "mpb", name: "MPB", station_count: 1 }]
+    })
+  }));
+  await page.route("https://de1.api.radio-browser.info/**", route => route.fulfill({
+    status: 200, contentType: "application/json", body: JSON.stringify([])
+  }));
+  await page.route("**/api/stations**", route => {
+    const url = new URL(route.request().url());
+    requests.push(url);
+    const stations = url.searchParams.get("category") === "mpb" ? [{
+      slug: "radio-mpb", name: "Rádio MPB Teste",
+      stream_url: "https://stream.example.test/mpb", logo_url: "",
+      country_code: "BR", city: "São Paulo", state: "SP",
+      language: "pt", description: "MPB", is_verified: true,
+      categories: ["mpb"]
+    }] : [];
+    route.fulfill({
+      status: 200, contentType: "application/json", body: JSON.stringify({
+        stations,
+        pagination: { total: stations.length, limit: 24, offset: 0, has_more: false }
+      })
+    });
+  });
+  await page.goto("/index.html?view=explorar");
+  await expect(page.locator("#genreFilter option[value='mpb']")).toHaveText("MPB");
+  await page.locator('#exploreCategories [data-genre="MPB"]').click();
+  await expect.poll(() => requests.some(url => url.searchParams.get("category") === "mpb")).toBeTruthy();
+  await expect(page.locator("#stations")).toContainText("Rádio MPB Teste");
 });
