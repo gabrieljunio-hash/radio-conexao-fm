@@ -31,7 +31,9 @@ test("gera página individual com SEO e conteúdo visível antes do JavaScript",
   assert.match(html, /Sobre a Rádio &lt;Teste&gt; &amp; Cia/);
   assert.match(html, /Informações da emissora/);
   assert.match(html, /Estilos musicais/);
-  assert.match(html, /stationPlayerOverlay/);\n  assert.match(html, /frame\.src="\/?\?station="\+encodeURIComponent\(id\)\+"&autoplay=1&openPlayer=1"/);\n  assert.match(html, /station-player-frame/);
+  assert.match(html, /stationPlayerOverlay/);
+  assert.match(html, /frame\.src="\/?\?station="\+encodeURIComponent\(id\)\+"&autoplay=1&openPlayer=1"/);
+  assert.match(html, /station-player-frame/);
   assert.doesNotMatch(html, /radio\.html\?station=/);
   assert.match(html, /https:\/\/example\.com\/logo\.png/);
 });
