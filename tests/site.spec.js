@@ -458,3 +458,35 @@ test("link da página SEO abre a rádio no player fixo mesmo fora das primeiras 
   await expect(page.locator("#audio")).toHaveAttribute("src", "https://stream.example.test/live");
   expect(requests.some(item => item.limit === 100 && item.offset === 0)).toBeTruthy();
 });
+
+
+
+test("links antigos de rádios abrem uma página estilizada e recuperam dados salvos", async ({ page }) => {
+  const slug = "rb-1b575746-d639-45f9-b4b7-07b8d82b70f9";
+  await page.addInitScript(({ slug }) => {
+    localStorage.setItem("conexao-fm-favorite-stations", JSON.stringify([{
+      id: "db-" + slug,
+      name: "Rádio salva para teste",
+      city: "Campinas",
+      genre: "Pop",
+      tagline: "Programação musical",
+      favicon: "",
+      streamUrl: "https://stream.example.test/live"
+    }]));
+  }, { slug });
+  await page.route("**/radio/" + slug + "/", route =>
+    route.fulfill({ status: 404, contentType: "text/html", path: "404.html" })
+  );
+  await page.route("https://radio-conexao-api.bieljuniho.workers.dev/api/stations**", route =>
+    route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({
+      stations: [],
+      pagination: { total: 0, limit: 100, offset: 0, has_more: false }
+    }) })
+  );
+
+  await page.goto("/radio/" + slug + "/");
+  await expect(page).toHaveURL(new RegExp("radio\\.html\\?station=" + slug));
+  await expect(page.locator(".radio-card h1")).toHaveText("Rádio salva para teste");
+  await expect(page.locator("#listen")).toBeVisible();
+  await expect(page.locator(".radio-card")).toBeVisible();
+});

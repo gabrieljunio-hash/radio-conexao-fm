@@ -77,6 +77,21 @@ async function findStation(){
   if(!data.pagination?.has_more)break;
   offset+=stations.length||Number(data.pagination?.limit||100);
  }
+ const saved=(()=>{try{return JSON.parse(localStorage.getItem("conexao-fm-favorite-stations")||"[]")}catch{return []}})();
+ const cached=Array.isArray(saved)?saved.find(item=>item&&typeof item.id==="string"&&(item.id===slug||item.id==="db-"+slug)):null;
+ if(cached&&String(cached.name||"").trim()){
+  return {
+   slug,
+   name:String(cached.name).trim(),
+   stream_url:String(cached.streamUrl||""),
+   logo_url:String(cached.favicon||""),
+   website_url:String(cached.websiteUrl||""),
+   city:String(cached.city||""),
+   state:"",
+   description:String(cached.tagline||"Rádio salva anteriormente."),
+   categories:cached.genre?[String(cached.genre)]:[]
+  };
+ }
  throw new Error("A emissora não está cadastrada no catálogo.");
 }
 findStation().then(render).catch(error=>showError(error.message||"Não foi possível carregar os dados agora."));
