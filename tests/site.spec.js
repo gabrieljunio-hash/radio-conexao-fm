@@ -508,3 +508,43 @@ test("links antigos de rádios abrem uma página estilizada e recuperam dados sa
   await expect(page.locator("#listen")).toBeVisible();
   await expect(page.locator(".radio-card")).toBeVisible();
 });
+
+
+test("categorias do Explorar consultam o catálogo pela categoria real", async ({ page }) => {
+  const requests = [];
+  await page.route("**/data/radio-status.json", route => route.fulfill({
+    status: 200, contentType: "application/json", body: JSON.stringify({ stations: [] })
+  }));
+  await page.route("https://radio-conexao-api.bieljuniho.workers.dev/api/catalog/filters", route => route.fulfill({
+    status: 200, contentType: "application/json", body: JSON.stringify({
+      countries: [{ code: "BR", station_count: 1 }],
+      languages: [{ code: "pt", station_count: 1 }],
+      regions: [], cities: [],
+      categories: [{ slug: "mpb", name: "MPB", station_count: 1 }]
+    })
+  }));
+  await page.route("https://de1.api.radio-browser.info/**", route => route.fulfill({
+    status: 200, contentType: "application/json", body: JSON.stringify([])
+  }));
+  await page.route("https://radio-conexao-api.bieljuniho.workers.dev/api/stations**", route => {
+    const url = new URL(route.request().url());
+    requests.push(url);
+    const stations = url.searchParams.get("category") === "mpb" ? [{
+      slug: "radio-mpb", name: "Rádio MPB Teste",
+      stream_url: "https://stream.example.test/mpb", logo_url: "",
+      country_code: "BR", city: "São Paulo", state: "SP",
+      language: "pt", description: "MPB", is_verified: true,
+      categories: ["mpb"]
+    }] : [];
+    route.fulfill({
+      status: 200, contentType: "application/json", body: JSON.stringify({
+        stations,
+        pagination: { total: stations.length, limit: 24, offset: 0, has_more: false }
+      })
+    });
+  });
+  await page.goto("/index.html?view=explorar");
+  await page.locator('#exploreCategories [data-genre="MPB"]').click();
+  await expect.poll(() => requests.some(url => url.searchParams.get("category") === "mpb")).toBeTruthy();
+  await expect(page.locator("#stations")).toContainText("Rádio MPB Teste");
+});
