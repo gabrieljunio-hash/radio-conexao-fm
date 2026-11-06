@@ -1,0 +1,33 @@
+name: API load test (read-only)
+
+on:
+  push:
+    branches:
+      - test/api-load-stage1
+    paths:
+      - "scripts/load-test-api.mjs"
+      - ".github/workflows/api-load-test.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: api-load-test-stage1
+  cancel-in-progress: true
+
+jobs:
+  load-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Run staged read-only load test
+        env:
+          API_BASE: https://radio-conexao-api.bieljuniho.workers.dev
+        run: node scripts/load-test-api.mjs
