@@ -595,6 +595,9 @@ test("interrupção temporária retoma uma única vez quando o Chrome recupera o
     audio.pause(); // simula pausa do sistema, não acionada pelo usuário
     Object.defineProperty(document, "visibilityState", { configurable: true, get: () => "hidden" });
     document.dispatchEvent(new Event("visibilitychange"));
+  });
+  await page.waitForTimeout(50);
+  await page.evaluate(() => {
     Object.defineProperty(document, "visibilityState", { configurable: true, get: () => "visible" });
     document.dispatchEvent(new Event("visibilitychange"));
     window.dispatchEvent(new Event("focus"));
