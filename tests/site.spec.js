@@ -553,6 +553,17 @@ test("categorias do Explorar consultam o catálogo pela categoria real", async (
 
 async function openInterruptionTestStation(page) {
   await page.addInitScript(() => {
+    localStorage.setItem("conexao-fm-favorites", JSON.stringify(["db-radio-teste"]));
+    localStorage.setItem("conexao-fm-favorite-stations", JSON.stringify([{
+      id: "db-radio-teste",
+      name: "Rádio Teste Interrupção",
+      city: "Campinas, SP",
+      genre: "Pop",
+      tagline: "Estação de teste",
+      streamUrl: "https://stream.example.test/live",
+      bitrate: 128,
+      initials: "RTI"
+    }]));
     Object.defineProperty(HTMLMediaElement.prototype, "paused", {
       configurable: true,
       get() { return this.__mockPaused !== false; }
@@ -568,24 +579,12 @@ async function openInterruptionTestStation(page) {
       this.dispatchEvent(new Event("pause"));
     };
   });
-  await page.route("**/data/radio-status.json", route => route.fulfill({
-    status: 200, contentType: "application/json", body: JSON.stringify({ stations: [] })
-  }));
   await page.route("**/api/**", route => route.fulfill({
-    status: 200, contentType: "application/json", body: JSON.stringify({})
+    status: 200, contentType: "application/json",
+    body: JSON.stringify({ stations: [], pagination: { total: 0, limit: 100, offset: 0, has_more: false } })
   }));
-  await page.route("**/api/stations**", route => route.fulfill({
-    status: 200, contentType: "application/json", body: JSON.stringify({
-      stations: [{
-        slug: "radio-teste-interrupcao", name: "Rádio Teste Interrupção",
-        stream_url: "https://stream.example.test/live", logo_url: "",
-        city: "Campinas", state: "SP", categories: ["pop"]
-      }],
-      pagination: { total: 1, limit: 24, offset: 0, has_more: false }
-    })
-  }));
-  await page.goto("/index.html?view=explorar");
-  await page.locator('[data-play="radio-teste-interrupcao"]').click();
+  await page.goto("/index.html?view=favoritos");
+  await page.locator('[data-play="db-radio-teste"]').click();
   await expect.poll(() => page.evaluate(() => window.__audioPlayCalls || 0)).toBe(1);
 }
 
