@@ -526,7 +526,7 @@ test("categorias do Explorar consultam o catálogo pela categoria real", async (
   await page.route("https://de1.api.radio-browser.info/**", route => route.fulfill({
     status: 200, contentType: "application/json", body: JSON.stringify([])
   }));
-  await page.route("https://radio-conexao-api.bieljuniho.workers.dev/api/stations**", route => {
+  await page.route("**/api/stations**", route => {
     const url = new URL(route.request().url());
     requests.push(url);
     const stations = url.searchParams.get("category") === "mpb" ? [{
