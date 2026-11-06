@@ -25,7 +25,7 @@ test("player permanece montado ao abrir páginas internas e trocar de seção", 
   await expect(page.frameLocator("#persistentPageFrame").locator("h1")).toHaveText("Painel de audiência");
   expect(await page.evaluate(() => window.__persistentAudioNode === document.getElementById("audio"))).toBeTruthy();
 
-  await page.locator("#persistentPageClose").click();
+  await page.goBack();
   await expect(page.locator("#persistentPageOverlay")).toBeHidden();
   await page.locator('.sidebar .nav a[href="radios.html"]').click();
   await expect(page).toHaveURL(/radios\.html$/);
