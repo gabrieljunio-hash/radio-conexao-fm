@@ -19,6 +19,7 @@
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"RadioStation","name":"MGT CLÁSSICOS SERTANEJOS","description":"A MGT tem as melhores rádios sertaneja raiz, universitário, modão, Flashback anos 80, 90, samba, pagode, gospel, brega, forró... O melhor do rádio FM","inLanguage":"pt","url":"https://radio-conexao-fm.pages.dev/radio/rb-7243de27-598a-4d88-8028-533da5a20d40/","address":{"@type":"PostalAddress","addressRegion":"Brasil","addressCountry":"BR"},"broadcastDisplayName":"MGT CLÁSSICOS SERTANEJOS","sameAs":["https://www.mgtradio.net/"]}</script>
 <style id="radio-page-styles">
 *{box-sizing:border-box}body{margin:0;background:#f5f4ef;color:#17213a;font:16px/1.6 system-ui,-apple-system,sans-serif}.wrap{width:min(760px,calc(100% - 28px));margin:28px auto 70px}.back{display:inline-block;padding:10px 14px;border:1px solid #17213a26;border-radius:12px;background:#fff;color:#17213a;text-decoration:none;font-weight:700}.card{margin-top:20px;padding:clamp(22px,5vw,40px);border:1px solid #17213a20;border-radius:22px;background:#fff;box-shadow:0 12px 36px #17213a0c}.brand{color:#e66b55;font-size:13px;font-weight:800;letter-spacing:.05em}.logo{display:block;width:112px;height:112px;margin:22px 0 18px;object-fit:contain;border-radius:22px;background:#f1eee9}.logo-placeholder{display:grid;place-items:center;width:112px;height:112px;margin:22px 0 18px;border-radius:22px;background:#f1eee9;color:#e66b55;font-size:40px}h1{margin:0 0 8px;font-size:clamp(26px,6vw,38px);line-height:1.2;overflow-wrap:anywhere}.location{margin:0;color:#59657c}.description{margin:22px 0;color:#344057}.tags{display:flex;flex-wrap:wrap;gap:8px;padding:0;list-style:none}.tags li{padding:6px 11px;border-radius:999px;background:#f1eee9;font-size:13px}.details{margin-top:26px;padding-top:20px;border-top:1px solid #17213a18}.details h2,.about h2{font-size:19px;margin:0 0 12px}.details dl{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin:0}.details dl div{padding:12px;border-radius:12px;background:#f5f4ef}.details dt{font-size:12px;color:#59657c}.details dd{margin:3px 0 0;font-weight:700;overflow-wrap:anywhere}.about{margin-top:24px}.about p{margin:0;color:#344057}.about .source{margin-top:12px;font-size:13px}.about .source a{color:#344057}.listen{display:inline-flex;align-items:center;justify-content:center;min-height:48px;margin:10px 0 12px;padding:10px 20px;border-radius:12px;background:#17213a;color:#fff;text-decoration:none;font-weight:800;box-shadow:0 4px 12px #17213a20}.listen:focus-visible{outline:3px solid #e66b55;outline-offset:3px}.website{display:block;margin-top:16px;color:#344057}.footer{margin-top:22px;text-align:center;color:#59657c;font-size:13px}.footer a{color:inherit}@media(max-width:520px){.wrap{margin-top:16px}.card{border-radius:17px}}
+.listen{font:inherit;cursor:pointer;border:0}.station-player-overlay{position:fixed;inset:0;z-index:9999;background:#f5f4ef;display:grid;grid-template-rows:48px minmax(0,1fr)}.station-player-overlay[hidden]{display:none}.station-player-toolbar{display:flex;align-items:center;gap:12px;padding:6px 14px;background:#17213a;color:#fff}.station-player-toolbar button{min-height:36px;padding:6px 14px;border:1px solid #ffffff55;border-radius:9px;background:#ffffff12;color:#fff;font:inherit;font-weight:700}.station-player-toolbar span{font-size:13px}.station-player-frame{display:block;width:100%;height:100%;border:0;background:#f5f4ef}@media(max-width:520px){.station-player-overlay{grid-template-rows:46px minmax(0,1fr)}}
 </style>
 </head>
 <body>
@@ -28,7 +29,7 @@
 <div class="brand">CONEXÃO FM · A MÚSICA QUE CONECTA VOCÊ</div>
 <div class="logo-placeholder" aria-hidden="true">♫</div>
 <h1>MGT CLÁSSICOS SERTANEJOS</h1>
-<a class="listen" href="/?station=db-rb-7243de27-598a-4d88-8028-533da5a20d40&amp;autoplay=1&amp;openPlayer=1">▶ Ouvir rádio</a>
+<button class="listen" type="button" data-open-station-player data-station-id="db-rb-7243de27-598a-4d88-8028-533da5a20d40">▶ Ouvir rádio</button>
 <p class="location">Brasil · Brasil</p>
 
 <section class="about" aria-labelledby="about-title"><h2 id="about-title">Sobre a MGT CLÁSSICOS SERTANEJOS</h2><p class="description">A MGT tem as melhores rádios sertaneja raiz, universitário, modão, Flashback anos 80, 90, samba, pagode, gospel, brega, forró... O melhor do rádio FM</p><p class="source">Informações consultadas em <a href="https://www.mgtradio.net/" rel="nofollow noopener noreferrer" target="_blank">www.mgtradio.net</a>.</p></section>
@@ -37,5 +38,31 @@
 </article>
 <footer class="footer">Conexão FM — A música que conecta você · <a href="/privacidade.html">Privacidade</a> · <a href="/contato.html">Contato</a></footer>
 </main>
+<section class="station-player-overlay" id="stationPlayerOverlay" hidden aria-label="Player da rádio">
+  <div class="station-player-toolbar"><button type="button" id="closeStationPlayer">← Voltar à rádio</button><span>Player Conexão FM</span></div>
+  <iframe class="station-player-frame" id="stationPlayerFrame" title="Player da Conexão FM" allow="autoplay"></iframe>
+</section>
+<script>
+(function(){
+  const button=document.querySelector("[data-open-station-player]");
+  const overlay=document.getElementById("stationPlayerOverlay");
+  const frame=document.getElementById("stationPlayerFrame");
+  const close=document.getElementById("closeStationPlayer");
+  if(!button||!overlay||!frame||!close)return;
+  button.addEventListener("click",function(){
+    const id=button.getAttribute("data-station-id");
+    overlay.hidden=false;
+    document.body.style.overflow="hidden";
+    frame.src="/?station="+encodeURIComponent(id)+"&autoplay=1&openPlayer=1";
+  });
+  function closePlayer(){
+    overlay.hidden=true;
+    frame.src="about:blank";
+    document.body.style.overflow="";
+  }
+  close.addEventListener("click",closePlayer);
+  document.addEventListener("keydown",event=>{if(event.key==="Escape"&&!overlay.hidden)closePlayer()});
+})();
+</script>
 </body>
 </html>
