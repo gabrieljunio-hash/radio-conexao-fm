@@ -1,9 +1,9 @@
-name: API load test (read-only)
+name: API endpoint load test (read-only)
 
 on:
   push:
     branches:
-      - test/api-load-stage1
+      - test/api-endpoints-stage2
     paths:
       - "scripts/load-test-api.mjs"
       - ".github/workflows/api-load-test.yml"
@@ -13,7 +13,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: api-load-test-stage1
+  group: api-endpoint-load-test-stage2
   cancel-in-progress: true
 
 jobs:
@@ -27,7 +27,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Run staged read-only load test
+      - name: Run staged read-only endpoint test
         env:
           API_BASE: https://radio-conexao-api.bieljuniho.workers.dev
         run: node scripts/load-test-api.mjs
