@@ -26,14 +26,11 @@
 @media(max-width:740px){.sponsored-campaigns{grid-template-columns:1fr}.sponsored-card{padding:10px}.sponsored-card img{width:56px;height:56px;flex-basis:56px}}
 </style>
 <style>
-#persistentPageOverlay{position:fixed;inset:0 0 96px 0;z-index:800;background:#f5f4ef;display:grid;grid-template-rows:48px minmax(0,1fr)}
+#persistentPageOverlay{position:fixed;inset:0 0 96px 0;z-index:800;background:#f5f4ef;display:grid;grid-template-rows:minmax(0,1fr)}
 #persistentPageOverlay[hidden]{display:none}
-.persistent-page-toolbar{display:flex;align-items:center;gap:12px;padding:6px 14px;background:#17213a;color:#fff}
-.persistent-page-toolbar button{min-height:34px;padding:5px 13px;border:1px solid #ffffff40;border-radius:9px;background:#ffffff12;color:#fff;font-weight:700}
-.persistent-page-toolbar span{font-size:12px;opacity:.8}
 #persistentPageFrame{display:block;width:100%;height:100%;border:0;background:#f5f4ef}
 #player{z-index:1002!important}.persistent-page-open{overflow:hidden}
-@media(max-width:740px){#persistentPageOverlay{inset:0 0 92px 0}.persistent-page-toolbar{min-height:44px}}
+@media(max-width:740px){#persistentPageOverlay{inset:0 0 92px 0}}
 </style>
 <style>
 .catalog-filter-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:14px 0 18px;padding:14px;border:1px solid var(--line);border-radius:16px;background:var(--panel)}
@@ -93,7 +90,6 @@
 </main>
 <section class="player" id="player" aria-label="Player de rádio"><div class="now"><div class="mini-cover" id="playerCover">♫</div><div class="track"><strong id="playerName">Escolha uma rádio</strong><small id="playerMeta">Sua próxima estação está esperando</small></div><button class="icon favorite-player" id="favCurrent" disabled aria-label="Favoritar rádio" title="Favoritar">♡</button></div><div class="controls"><div class="buttons"><button class="transport" id="previous" type="button" title="Rádio anterior" aria-label="Rádio anterior" disabled>⏮</button><button class="transport stop-control" id="stop" type="button" title="Parar" aria-label="Parar" disabled>■</button><button class="bigplay" id="toggle" type="button" aria-label="Reproduzir" title="Reproduzir">▶</button><button class="transport" id="next" type="button" title="Próxima rádio" aria-label="Próxima rádio" disabled>⏭</button><button class="transport" id="mute" type="button" title="Silenciar" aria-label="Silenciar">◖))</button></div><div class="status" id="status">Pronto para sintonizar</div></div><label class="volume" title="Volume">VOLUME <input type="range" id="volume" min="0" max="1" step=".05" value=".5" aria-label="Volume"><span id="volumeText">50%</span></label><audio id="audio" preload="none"></audio></section>
 <section id="persistentPageOverlay" hidden aria-label="Página da Conexão FM">
-  <div class="persistent-page-toolbar"><button id="persistentPageClose" type="button">← Voltar</button><span>O player continua tocando enquanto você navega</span></div>
   <iframe id="persistentPageFrame" title="Conteúdo da Conexão FM"></iframe>
 </section>
 <section class="fullscreen-player" id="fullscreenPlayer" hidden role="dialog" aria-modal="true" aria-label="Player em tela cheia">
@@ -490,7 +486,6 @@ function closePersistentPage(fromPopState=false){
  $("persistentPageFrame").src="about:blank";
  if(persistentPageHistoryEntry&&!fromPopState){persistentPageHistoryEntry=false;try{history.back()}catch{}}else persistentPageHistoryEntry=false;
 }
-$("persistentPageClose").addEventListener("click",()=>closePersistentPage());
 $("persistentPageFrame").addEventListener("load",()=>{
  try{
   const url=new URL($("persistentPageFrame").contentWindow.location.href);
