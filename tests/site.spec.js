@@ -549,3 +549,91 @@ test("categorias do Explorar consultam o catálogo pela categoria real", async (
   await expect.poll(() => requests.some(url => url.searchParams.get("category") === "mpb")).toBeTruthy();
   await expect(page.locator("#stations")).toContainText("Rádio MPB Teste");
 });
+
+
+async function openInterruptionTestStation(page) {
+  await page.addInitScript(() => {
+    localStorage.setItem("conexao-fm-favorites", JSON.stringify(["db-radio-teste"]));
+    localStorage.setItem("conexao-fm-favorite-stations", JSON.stringify([{
+      id: "db-radio-teste",
+      name: "Rádio Teste Interrupção",
+      city: "Campinas, SP",
+      genre: "Pop",
+      tagline: "Estação de teste",
+      streamUrl: "https://stream.example.test/live",
+      bitrate: 128,
+      initials: "RTI"
+    }]));
+    Object.defineProperty(HTMLMediaElement.prototype, "paused", {
+      configurable: true,
+      get() { return this.__mockPaused !== false; }
+    });
+    HTMLMediaElement.prototype.play = function () {
+      window.__audioPlayCalls = (window.__audioPlayCalls || 0) + 1;
+      this.__mockPaused = false;
+      this.dispatchEvent(new Event("playing"));
+      return Promise.resolve();
+    };
+    HTMLMediaElement.prototype.pause = function () {
+      this.__mockPaused = true;
+      this.dispatchEvent(new Event("pause"));
+    };
+  });
+  await page.route("**/api/**", route => route.fulfill({
+    status: 200, contentType: "application/json",
+    body: JSON.stringify({ stations: [], pagination: { total: 0, limit: 100, offset: 0, has_more: false } })
+  }));
+  await page.goto("/index.html?view=favoritos");
+  await page.locator('[data-play="db-radio-teste"]').click();
+  await expect.poll(() => page.evaluate(() => window.__audioPlayCalls || 0)).toBe(1);
+}
+
+test("interrupção temporária retoma uma única vez quando o Chrome recupera o foco", async ({ page }) => {
+  await openInterruptionTestStation(page);
+  await page.evaluate(() => {
+    const audio = document.getElementById("audio");
+    audio.pause(); // simula pausa do sistema, não acionada pelo usuário
+    Object.defineProperty(document, "visibilityState", { configurable: true, get: () => "hidden" });
+    document.dispatchEvent(new Event("visibilitychange"));
+  });
+  await page.waitForTimeout(50);
+  await page.evaluate(() => {
+    Object.defineProperty(document, "visibilityState", { configurable: true, get: () => "visible" });
+    document.dispatchEvent(new Event("visibilitychange"));
+    window.dispatchEvent(new Event("focus"));
+  });
+  await expect.poll(() => page.evaluate(() => window.__audioPlayCalls || 0), { timeout: 3000 }).toBe(2);
+  await page.evaluate(() => {
+    window.dispatchEvent(new Event("focus"));
+    document.dispatchEvent(new Event("visibilitychange"));
+  });
+  await page.waitForTimeout(1000);
+  expect(await page.evaluate(() => window.__audioPlayCalls)).toBe(2);
+});
+
+test("pausa manual não é desfeita ao recuperar o foco", async ({ page }) => {
+  await openInterruptionTestStation(page);
+  await page.locator("#toggle").click();
+  await page.evaluate(() => {
+    Object.defineProperty(document, "visibilityState", { configurable: true, get: () => "hidden" });
+    document.dispatchEvent(new Event("visibilitychange"));
+    Object.defineProperty(document, "visibilityState", { configurable: true, get: () => "visible" });
+    document.dispatchEvent(new Event("visibilitychange"));
+    window.dispatchEvent(new Event("focus"));
+  });
+  await page.waitForTimeout(1000);
+  expect(await page.evaluate(() => window.__audioPlayCalls)).toBe(1);
+});
+
+test("parar a rádio cancela a recuperação automática", async ({ page }) => {
+  await openInterruptionTestStation(page);
+  await page.evaluate(() => document.getElementById("audio").pause());
+  await page.locator("#stop").click();
+  await page.evaluate(() => {
+    Object.defineProperty(document, "visibilityState", { configurable: true, get: () => "visible" });
+    document.dispatchEvent(new Event("visibilitychange"));
+    window.dispatchEvent(new Event("focus"));
+  });
+  await page.waitForTimeout(1000);
+  expect(await page.evaluate(() => window.__audioPlayCalls)).toBe(1);
+});
