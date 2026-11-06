@@ -33,6 +33,24 @@ test("player permanece montado ao abrir páginas internas e trocar de seção", 
   expect(await page.evaluate(() => window.__persistentAudioNode === document.getElementById("audio"))).toBeTruthy();
 });
 
+test("fechar o player também encerra a aba de navegação persistente", async ({ page }) => {
+  await page.route("https://radio-conexao-api.bieljuniho.workers.dev/api/stats**", route =>
+    route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({
+      period: "7d", summary: { plays: 0, sessions: 0, stops: 0, heartbeats: 0 },
+      top_stations: [], daily: []
+    }) })
+  );
+  await page.goto("/");
+  await page.locator('a[href="audiencia.html"]').first().click();
+  await expect(page.locator("#persistentPageOverlay")).toBeVisible();
+  await page.locator("#playerName").click();
+  await expect(page.locator("#fullscreenPlayer")).toBeVisible();
+  await page.locator("#fullClose").click();
+  await expect(page.locator("#fullscreenPlayer")).toBeHidden();
+  await expect(page.locator("#persistentPageOverlay")).toBeHidden();
+  await expect(page.locator("body")).not.toHaveClass(/persistent-page-open/);
+});
+
 test("detalhes da rádio usam o player fixo sem criar outro áudio", async ({ page }) => {
   await page.addInitScript(() => {
     HTMLMediaElement.prototype.play = function () { return Promise.resolve(); };
