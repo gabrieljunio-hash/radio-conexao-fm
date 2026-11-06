@@ -374,7 +374,7 @@ test("explorar combina país, idioma e gênero, mostra bandeira e carrega mais r
       tags: "rock", favicon: "", lastcheckok: 1, bitrate: 128
     }])
   }));
-  await page.route("https://radio-conexao-api.bieljuniho.workers.dev/api/stations**", route => {
+  await page.route("**/api/stations**", route => {
     const url = new URL(route.request().url());
     stationRequests.push(url);
     const offset = Number(url.searchParams.get("offset") || 0);
