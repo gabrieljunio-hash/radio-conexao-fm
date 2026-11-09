@@ -1198,3 +1198,15 @@ a{text-underline-offset:3px}
 .cover .station-logo,.recent-cover .recent-logo,.popular-cover .popular-logo,
 .featured-cover .featured-logo,.rail-cover .rail-logo{z-index:1}
 .cover.has-image .cover-fallback{opacity:0}
+
+/* Skeleton de carregamento: mantém as dimensões dos cartões e respeita movimento reduzido. */
+.skeleton-shimmer{position:relative;overflow:hidden;background:#e9eaf0!important;border:0!important;color:transparent!important}
+.skeleton-shimmer:after{content:"";position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,rgba(255,255,255,.72),transparent);animation:skeleton-sweep 1.25s ease-in-out infinite}
+@keyframes skeleton-sweep{to{transform:translateX(100%)}}
+.skeleton-station{pointer-events:none;box-shadow:none!important;transform:none!important}.skeleton-cover{width:100%;aspect-ratio:1.7;border-radius:10px;margin-bottom:12px}
+.skeleton-station-info{display:flex;align-items:center;gap:9px}.skeleton-copy,.skeleton-compact-copy{display:flex;flex:1;min-width:0;flex-direction:column;gap:8px}.skeleton-line{display:block;height:9px;border-radius:99px}.skeleton-line-long{width:78%}.skeleton-line-medium{width:55%}.skeleton-line-short{width:34%}
+.skeleton-play,.skeleton-action,.skeleton-featured-play{display:block;flex:0 0 36px;width:36px;height:36px;border-radius:50%}.skeleton-tags{display:flex;gap:7px;margin-top:12px}.skeleton-tags .skeleton-line{height:17px;border-radius:5px}
+.skeleton-compact{pointer-events:none}.skeleton-thumb{display:block;flex:0 0 46px;width:46px;height:46px;border-radius:10px}.skeleton-compact-copy{gap:7px}.skeleton-action{flex-basis:30px;width:30px;height:30px}.skeleton-rank{width:20px;height:16px;border-radius:4px}
+.skeleton-rail .genre-rail-cards{overflow:hidden}.skeleton-rail .rail-station{gap:8px}.skeleton-rail-cover{display:block;width:100%;aspect-ratio:1;border-radius:14px}.featured-station .skeleton-line{height:9px}.featured-station .skeleton-featured-play{flex-basis:46px;width:46px;height:46px}
+@media(max-width:740px){.skeleton-cover{aspect-ratio:1.25}.skeleton-thumb{width:44px;height:44px;flex-basis:44px}.skeleton-rail .rail-station{flex-basis:125px}}
+@media(prefers-reduced-motion:reduce){.skeleton-shimmer:after{animation:none;transform:none;opacity:.16}}
