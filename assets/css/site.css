@@ -1210,3 +1210,11 @@ a{text-underline-offset:3px}
 .skeleton-rail .genre-rail-cards{overflow:hidden}.skeleton-rail .rail-station{gap:8px}.skeleton-rail-cover{display:block;width:100%;aspect-ratio:1;border-radius:14px}.featured-station .skeleton-line{height:9px}.featured-station .skeleton-featured-play{flex-basis:46px;width:46px;height:46px}
 @media(max-width:740px){.skeleton-cover{aspect-ratio:1.25}.skeleton-thumb{width:44px;height:44px;flex-basis:44px}.skeleton-rail .rail-station{flex-basis:125px}}
 @media(prefers-reduced-motion:reduce){.skeleton-shimmer:after{animation:none;transform:none;opacity:.16}}
+
+
+/* Oculta o ícone de fallback quando a miniatura tem uma imagem carregável.
+   Se a imagem falhar, o onerror remove a classe/elemento e o fallback reaparece. */
+.recent-cover:has(.recent-logo) .cover-fallback,
+.popular-cover:has(.popular-logo) .cover-fallback,
+.featured-cover:has(.featured-logo) .cover-fallback,
+.rail-cover:has(.rail-logo) .cover-fallback{opacity:0}
