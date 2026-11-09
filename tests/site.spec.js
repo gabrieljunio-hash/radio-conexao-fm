@@ -588,7 +588,7 @@ async function openInterruptionTestStation(page) {
   await expect.poll(() => page.evaluate(() => window.__audioPlayCalls || 0)).toBe(1);
 }
 
-test("interrupção temporária retoma uma única vez quando o Chrome recupera o foco", async ({ page }) => {
+test("interrupção temporária retoma uma única vez quando a página volta a ficar visível", async ({ page }) => {
   await openInterruptionTestStation(page);
   await page.evaluate(() => {
     const audio = document.getElementById("audio");
@@ -600,7 +600,6 @@ test("interrupção temporária retoma uma única vez quando o Chrome recupera o
   await page.evaluate(() => {
     Object.defineProperty(document, "visibilityState", { configurable: true, get: () => "visible" });
     document.dispatchEvent(new Event("visibilitychange"));
-    window.dispatchEvent(new Event("focus"));
   });
   await expect.poll(() => page.evaluate(() => window.__audioPlayCalls || 0), { timeout: 3000 }).toBe(2);
   await page.evaluate(() => {
@@ -609,6 +608,21 @@ test("interrupção temporária retoma uma única vez quando o Chrome recupera o
   });
   await page.waitForTimeout(1000);
   expect(await page.evaluate(() => window.__audioPlayCalls)).toBe(2);
+});
+
+
+test("restaurar ou abrir o Chrome não inicia a rádio automaticamente", async ({ page }) => {
+  await openInterruptionTestStation(page);
+  await page.evaluate(() => {
+    document.getElementById("audio").pause();
+    window.dispatchEvent(new Event("pagehide"));
+    window.dispatchEvent(new Event("pageshow"));
+    Object.defineProperty(document, "visibilityState", { configurable: true, get: () => "visible" });
+    document.dispatchEvent(new Event("visibilitychange"));
+    window.dispatchEvent(new Event("focus"));
+  });
+  await page.waitForTimeout(1000);
+  expect(await page.evaluate(() => window.__audioPlayCalls)).toBe(1);
 });
 
 test("pausa manual não é desfeita ao recuperar o foco", async ({ page }) => {
