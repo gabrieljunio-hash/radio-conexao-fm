@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { buildStationPage, buildSitemap, escapeHtml, enrichStation, enrichStations } from "./generate-radio-pages.mjs";
+import { buildStationPage, buildSitemap, escapeHtml, enrichStation, enrichStations, isUsefulStationDescription, isIndexableStationPage } from "./generate-radio-pages.mjs";
 
 const station = {
   slug: "radio-teste",
@@ -28,8 +28,9 @@ test("gera página individual com SEO e conteúdo visível antes do JavaScript",
   assert.match(html, /<style id="radio-page-styles">[\s\S]*\.listen\{[\s\S]*<\/style>/);
   assert.match(html, /<h1>Rádio &lt;Teste&gt; &amp; Cia<\/h1>\s*<button class="listen" type="button" data-open-station-player data-station-id="db-radio-teste">▶ Ouvir rádio<\/button>/);
   assert.match(html, /Campinas, SP/);
-  assert.match(html, /Sobre a Rádio &lt;Teste&gt; &amp; Cia/);
-  assert.match(html, /Informações da emissora/);
+  assert.match(html, /name="robots" content="noindex,follow"/);
+  assert.match(html, /Esta página reúne os dados disponíveis no catálogo/);
+  assert.doesNotMatch(html, /Sobre a Rádio &lt;Teste&gt; &amp; Cia/);
   assert.match(html, /Estilos musicais/);
   assert.match(html, /stationPlayerOverlay/);
   assert.match(html, /frame\.src="\/?\?station="\+encodeURIComponent\(id\)\+"&autoplay=1&openPlayer=1"/);
@@ -44,15 +45,22 @@ test("rejeita slug inválido para impedir caminhos inseguros", () => {
 
 test("sitemap mantém páginas institucionais e adiciona URLs de rádios", () => {
   const current = '<?xml version="1.0"?><urlset><url><loc>https://radio-conexao-fm.pages.dev/</loc></url></urlset>';
-  const xml = buildSitemap(current, [station]);
+  const indexable = { ...station, enrichment: {
+    description: "A emissora apresenta uma programação regional com música brasileira, entrevistas, notícias locais e serviços para os moradores. A equipe acompanha acontecimentos da cidade e oferece conteúdos variados durante diferentes horários da semana.",
+    source_url: "https://radio.example/sobre",
+    source_name: "radio.example"
+  }};
+  const xml = buildSitemap(current, [station, indexable]);
   assert.match(xml, /https:\/\/radio-conexao-fm\.pages\.dev\//);
   assert.match(xml, /https:\/\/radio-conexao-fm\.pages\.dev\/radio\/radio-teste\//);
+  assert.doesNotMatch(xml, /\/radio\/radio-teste\/.*\/radio\/radio-teste/);
 });
 
 
 test("página não inventa descrição quando o catálogo não possui uma", () => {
   const html = buildStationPage({ ...station, description: "", categories: [], language: "" });
   assert.doesNotMatch(html, /Sobre a Rádio/);
+  assert.match(html, /noindex,follow/);
   assert.match(html, /Informações da emissora/);
   assert.match(html, /Ouvir rádio/);
 });
@@ -74,8 +82,11 @@ test("busca descrição e dados no site oficial e em página interna Sobre", asy
   assert.equal(result.enrichment.founded, "1985");
   assert.equal(result.enrichment.source_url, "https://radio.example/sobre");
   assert.equal(requests.length, 2);
-  const html = buildStationPage({ ...result, enrichment: result.enrichment });
-  assert.match(html, /Informações consultadas em/);
+  const enrichedStation = { ...result, enrichment: { ...result.enrichment, description: "A Rádio Teste transmite jornalismo, música e informação regional desde sua fundação. Sua programação acompanha a comunidade local durante todo o dia, oferece entrevistas, prestação de serviços e notícias que ajudam os ouvintes a conhecer os acontecimentos da região." }};
+  assert.equal(isIndexableStationPage(enrichedStation), true);
+  const html = buildStationPage(enrichedStation);
+  assert.match(html, /name="robots" content="index,follow"/);
+  assert.match(html, /Descrição consultada no/);
   assert.match(html, /FM 98\.7/);
   assert.match(html, /Rádio Teste transmite jornalismo/);
 });
@@ -164,4 +175,18 @@ test("não escolhe um site quando o diretório retorna duas fontes possíveis pa
     ]), { status: 200, headers: { "content-type": "application/json" } })
   );
   assert.equal(result.enrichment, null);
+});
+
+
+test("descrições genéricas, curtas ou suspeitas não qualificam páginas para indexação", () => {
+  assert.equal(isUsefulStationDescription("Música para todos."), false);
+  assert.equal(isUsefulStationDescription("Vastos anos de experiência tem sido aceito pela crítica na elaboração de mais delícias musicais."), false);
+  assert.equal(isIndexableStationPage({ ...station, enrichment: { description: "Descrição útil e longa, mas sem fonte oficial.", source_url: "" }}), false);
+});
+
+test("páginas sem descrição oficial substancial ficam fora do sitemap", () => {
+  const current = '<?xml version="1.0"?><urlset><url><loc>https://radio-conexao-fm.pages.dev/</loc></url></urlset>';
+  const thin = { ...station, enrichment: { description: "Rádio local com música.", source_url: "https://radio.example/" }};
+  const xml = buildSitemap(current, [thin]);
+  assert.doesNotMatch(xml, /\/radio\/radio-teste\//);
 });

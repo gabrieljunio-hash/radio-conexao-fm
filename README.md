@@ -19,7 +19,8 @@ Site estático responsivo para descobrir e ouvir rádios online, sem APIs pagas,
 - Metadados SEO por página, `robots.txt`, `sitemap.xml` e Open Graph
 - Política de privacidade atualizada para os recursos atuais, incluindo as divulgações do Google AdSense
 - Página pública de contato e links de atendimento no rodapé
-- Sitemap XML válido com as páginas públicas principais
+- Sitemap XML com páginas públicas úteis; páginas de emissoras sem descrição oficial substancial ficam fora da indexação
+- Guias originais sobre catálogo, consumo de internet e uso de rádio online
 - Acessibilidade: foco de teclado visível e suporte a movimento reduzido
 - Manifesto web para facilitar a instalação em dispositivos compatíveis
 - Catálogo comunitário Radio Browser com carregamento dinâmico de estações verificadas quando disponíveis

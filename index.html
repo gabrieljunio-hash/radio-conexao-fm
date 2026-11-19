@@ -41,6 +41,16 @@
 .catalog-country{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--muted)}
 @media(max-width:740px){.catalog-filter-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:10px}.catalog-filter-grid select,.catalog-filter-grid input{font-size:12px;min-height:40px}.catalog-filter-grid button{grid-column:1/-1}}
 </style>
+<style>
+.editorial-home{padding:22px;border:1px solid var(--line);border-radius:18px;background:var(--panel)}
+.editorial-home .editorial-intro{max-width:780px;color:var(--muted);font-size:14px;line-height:1.8}
+.editorial-links{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:18px}
+.editorial-link{display:block;padding:17px;border:1px solid var(--line);border-radius:13px;background:var(--bg);transition:transform .15s,border-color .15s}
+.editorial-link:hover{transform:translateY(-2px);border-color:var(--purple)}
+.editorial-link strong{display:block;margin-bottom:7px;font:700 15px Manrope}
+.editorial-link p{margin:0;color:var(--muted);font-size:12px;line-height:1.65}
+@media(max-width:740px){.editorial-home{padding:16px}.editorial-links{grid-template-columns:1fr}}
+</style>
 </head>
 <body>
 <aside class="sidebar">
@@ -86,7 +96,17 @@
   <button class="plain" id="clearCatalogFilters" type="button">Limpar filtros</button>
 </div><div class="stations" id="stations"></div><div class="catalog-more"><button class="plain" id="loadMoreCatalog" type="button" hidden>Carregar mais rádios</button></div><div class="empty" id="empty" hidden><h3>Nenhuma rádio encontrada</h3><p>Tente outro nome, cidade ou estilo.</p><button class="plain" id="clear">Limpar busca</button></div><p class="note" hidden>As rádios são carregadas de um diretório comunitário gratuito. A verificação registra quais transmissões funcionam, sem mudar a posição das rádios durante sua navegação. A disponibilidade pode variar. Dica para dados móveis: o áudio é o maior consumo — aproximadamente 29 MB/h a 64 kbps, 58 MB/h a 128 kbps e 144 MB/h a 320 kbps. O modo Economia prioriza transmissões com bitrate confirmado entre 64 e 128 kbps; não recodifica o áudio.</p></section>
 
-<footer class="footer"><span>Conexão FM — A música que conecta você.</span><span><a href="radios.html">Explorar rádios</a> · <a href="favoritos.html">Favoritos</a> · <a href="sobre.html">Sobre</a> · <a href="guia-radio-online.html">Guia de rádio online</a> · <a href="indicar.html">Indicar rádio</a> · <a href="privacidade.html">Privacidade</a> · <a href="contato.html">Contato</a> · <a href="audiencia.html">Audiência</a> · <a href="anuncie.html">Anuncie</a></span><button id="aboutFooter">Sobre o projeto</button></footer>
+<section class="section editorial-home" aria-labelledby="editorialTitle">
+<div class="eyebrow muted">CONHEÇA A PLATAFORMA</div>
+<h2 id="editorialTitle">Mais do que encontrar uma rádio</h2>
+<p class="editorial-intro">A Conexão FM organiza estações online para facilitar a descoberta por nome, cidade, país e estilo. As transmissões são fornecidas pelas próprias emissoras ou seus provedores. Como os links podem mudar, uma rádio que funciona hoje pode ficar indisponível depois.</p>
+<div class="editorial-links">
+<a class="editorial-link" href="catalogo-radio-online.html"><strong>Como funciona o catálogo</strong><p>Conheça as fontes dos dados, o que verificamos e o que significa uma transmissão marcada como verificada.</p></a>
+<a class="editorial-link" href="guia-radio-online.html"><strong>Guia para ouvir rádio online</strong><p>Aprenda a escolher uma estação, usar o player e resolver problemas comuns de reprodução.</p></a>
+<a class="editorial-link" href="consumo-internet-radio-online.html"><strong>Consumo de internet</strong><p>Veja estimativas por bitrate e maneiras de economizar dados móveis durante a escuta.</p></a>
+</div>
+</section>
+<footer class="footer"><span>Conexão FM — A música que conecta você.</span><span><a href="radios.html">Explorar rádios</a> · <a href="favoritos.html">Favoritos</a> · <a href="sobre.html">Sobre</a> · <a href="guia-radio-online.html">Guia</a> · <a href="catalogo-radio-online.html">Catálogo</a> · <a href="consumo-internet-radio-online.html">Consumo de internet</a> · <a href="indicar.html">Indicar rádio</a> · <a href="privacidade.html">Privacidade</a> · <a href="contato.html">Contato</a> · <a href="audiencia.html">Audiência</a> · <a href="anuncie.html">Anuncie</a></span><button id="aboutFooter">Sobre o projeto</button></footer>
 </main>
 <section class="player" id="player" aria-label="Player de rádio"><div class="now"><div class="mini-cover" id="playerCover">♫</div><div class="track"><strong id="playerName">Escolha uma rádio</strong><small id="playerMeta">Sua próxima estação está esperando</small></div><button class="icon favorite-player" id="favCurrent" disabled aria-label="Favoritar rádio" title="Favoritar">♡</button></div><div class="controls"><div class="buttons"><button class="transport" id="previous" type="button" title="Rádio anterior" aria-label="Rádio anterior" disabled>⏮</button><button class="transport stop-control" id="stop" type="button" title="Parar" aria-label="Parar" disabled>■</button><button class="bigplay" id="toggle" type="button" aria-label="Reproduzir" title="Reproduzir">▶</button><button class="transport" id="next" type="button" title="Próxima rádio" aria-label="Próxima rádio" disabled>⏭</button><button class="transport" id="mute" type="button" title="Silenciar" aria-label="Silenciar">◖))</button></div><div class="status" id="status">Pronto para sintonizar</div></div><label class="volume" title="Volume">VOLUME <input type="range" id="volume" min="0" max="1" step=".05" value=".5" aria-label="Volume"><span id="volumeText">50%</span></label><audio id="audio" preload="none"></audio></section>
 <section id="persistentPageOverlay" hidden aria-label="Página da Conexão FM">

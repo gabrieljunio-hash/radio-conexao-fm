@@ -320,6 +320,31 @@ test("rota antiga de explorar redireciona para a visualização correta e não e
 });
 
 
+test("guias originais são indexáveis, acessíveis e incluídos no sitemap", async ({ page, request }) => {
+  const xml = await (await request.get("/sitemap.xml")).text();
+  for (const path of ["/catalogo-radio-online.html", "/consumo-internet-radio-online.html"]) {
+    expect(xml).toContain("https://radio-conexao-fm.pages.dev" + path);
+    await page.goto(path);
+    await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", "index,follow");
+    await expect(page.locator("h1")).toBeVisible();
+    await expect(page.getByRole("link", { name: /← Início/i })).toHaveAttribute("href", "index.html");
+  }
+  await page.goto("/catalogo-radio-online.html");
+  await expect(page.locator("body")).toContainText("Uma verificação não é uma garantia");
+  await expect(page.locator("body")).toContainText("A Conexão FM hospeda as músicas?");
+  await page.goto("/consumo-internet-radio-online.html");
+  await expect(page.locator("body")).toContainText("3,5 GB");
+  await expect(page.locator("body")).toContainText("Economia de dados");
+});
+
+test("início apresenta os guias de conteúdo original", async ({ page }) => {
+  await page.goto("/");
+  const guides = page.locator(".editorial-home");
+  await expect(guides.getByRole("link", { name: /Como funciona o catálogo/i })).toHaveAttribute("href", "catalogo-radio-online.html");
+  await expect(guides.getByRole("link", { name: /Consumo de internet/i })).toHaveAttribute("href", "consumo-internet-radio-online.html");
+  await expect(guides.getByRole("link", { name: /Guia para ouvir rádio online/i })).toHaveAttribute("href", "guia-radio-online.html");
+});
+
 test("ads.txt declara corretamente o vendedor AdSense do site", async ({ request }) => {
   const response = await request.get("/ads.txt");
   expect(response.status()).toBe(200);
@@ -327,18 +352,18 @@ test("ads.txt declara corretamente o vendedor AdSense do site", async ({ request
   expect(body).toBe("google.com, pub-9719336050584861, DIRECT, f08c47fec0942fa0");
 });
 
-test("página Anuncie é pública, indexável e possui contato comercial", async ({ page }) => {
+test("página Anuncie é pública, não indexável e possui contato comercial", async ({ page }) => {
   await page.goto("/anuncie.html");
   await expect(page).toHaveTitle(/Anuncie na Conexão FM/i);
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", "https://radio-conexao-fm.pages.dev/anuncie.html");
-  await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", "index,follow");
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", "noindex,follow");
   await expect(page.getByRole("link", { name: /Solicitar informações pelo WhatsApp/i })).toHaveAttribute("href", /^https:\/\/wa\.me\//);
   await expect(page.locator("body")).toContainText("Patrocinado");
 });
 
-test("página Anuncie está incluída no sitemap e acessível pelo início", async ({ page, request }) => {
+test("página Anuncie fica fora do sitemap e acessível pelo início", async ({ page, request }) => {
   const xml = await (await request.get("/sitemap.xml")).text();
-  expect(xml).toContain("https://radio-conexao-fm.pages.dev/anuncie.html");
+  expect(xml).not.toContain("https://radio-conexao-fm.pages.dev/anuncie.html");
   await page.goto("/");
   await expect(page.getByRole("link", { name: "Anuncie" })).toHaveAttribute("href", "anuncie.html");
 });
