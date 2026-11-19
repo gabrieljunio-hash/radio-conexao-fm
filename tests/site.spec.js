@@ -327,18 +327,18 @@ test("ads.txt declara corretamente o vendedor AdSense do site", async ({ request
   expect(body).toBe("google.com, pub-9719336050584861, DIRECT, f08c47fec0942fa0");
 });
 
-test("página Anuncie é pública, indexável e possui contato comercial", async ({ page }) => {
+test("página Anuncie é pública, não indexável e possui contato comercial", async ({ page }) => {
   await page.goto("/anuncie.html");
   await expect(page).toHaveTitle(/Anuncie na Conexão FM/i);
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", "https://radio-conexao-fm.pages.dev/anuncie.html");
-  await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", "index,follow");
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", "noindex,follow");
   await expect(page.getByRole("link", { name: /Solicitar informações pelo WhatsApp/i })).toHaveAttribute("href", /^https:\/\/wa\.me\//);
   await expect(page.locator("body")).toContainText("Patrocinado");
 });
 
-test("página Anuncie está incluída no sitemap e acessível pelo início", async ({ page, request }) => {
+test("página Anuncie fica fora do sitemap e acessível pelo início", async ({ page, request }) => {
   const xml = await (await request.get("/sitemap.xml")).text();
-  expect(xml).toContain("https://radio-conexao-fm.pages.dev/anuncie.html");
+  expect(xml).not.toContain("https://radio-conexao-fm.pages.dev/anuncie.html");
   await page.goto("/");
   await expect(page.getByRole("link", { name: "Anuncie" })).toHaveAttribute("href", "anuncie.html");
 });
