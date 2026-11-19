@@ -54,7 +54,6 @@ test("sitemap mantém páginas institucionais e adiciona URLs de rádios", () =>
   assert.match(xml, /https:\/\/radio-conexao-fm\.pages\.dev\//);
   assert.match(xml, /https:\/\/radio-conexao-fm\.pages\.dev\/radio\/radio-teste\//);
   assert.doesNotMatch(xml, /\/radio\/radio-teste\/.*\/radio\/radio-teste/);
-  assert.doesNotMatch(xml, /\/radio\/radio-teste\/.*\/radio\/radio-teste/);
 });
 
 
