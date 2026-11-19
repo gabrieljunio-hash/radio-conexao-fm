@@ -46,6 +46,23 @@ function cleanText(value, max = 500) {
     .replace(/[|•·]+/g, " ").replace(/\s+/g, " ").trim().slice(0, max);
 }
 
+export function isUsefulStationDescription(value) {
+  const text = cleanText(value, 500);
+  const words = text.toLowerCase().match(/[a-záàâãéêíóôõúç]+/g) || [];
+  const unique = new Set(words);
+  if (text.length < 120 || words.length < 20 || unique.size / words.length < 0.38) return false;
+  if (/vastos anos de experiência|aceito pela crítica|elaboração de mais|rádio online|a melhor rádio|ouça ao vivo|transmitindo música/i.test(text)) return false;
+  if (/^(?:música|music|radio|rádio|online|ao vivo|pop|sertanejo|gospel)(?:[,. ]|$)/i.test(text) && words.length < 28) return false;
+  return true;
+}
+
+export function isIndexableStationPage(station) {
+  const enrichment = station?.enrichment || {};
+  const source = safeHttps(enrichment.source_url);
+  const hasLocation = Boolean(station?.city && station?.state) || Boolean(enrichment.frequency || enrichment.founded);
+  return Boolean(source && hasLocation && isUsefulStationDescription(enrichment.description));
+}
+
 function getMeta(html, keys) {
   for (const match of html.matchAll(/<meta\b[^>]*>/gi)) {
     const tag = match[0];
@@ -232,10 +249,13 @@ export function buildStationPage(station) {
   const categories = Array.isArray(station.categories) ? station.categories : [];
   const description = String(station.description || "").trim();
   const enrichment = station.enrichment || {};
-  const pageDescription = String(enrichment.description || description).trim();
+  const officialDescription = isUsefulStationDescription(enrichment.description) ? String(enrichment.description).trim() : "";
+  const catalogDescription = isUsefulStationDescription(description) ? description : "";
+  const pageDescription = officialDescription;
+  const indexable = isIndexableStationPage(station);
   const language = String(station.language || "").trim();
   const categoriesText = categories.map(value => String(value).replace(/-/g, " ")).join(", ");
-  const metaParts = [`Ouça ${name} ao vivo na Conexão FM.`, location, categoriesText ? `Estilos: ${categoriesText}.` : "", pageDescription, enrichment.slogan].filter(Boolean);
+  const metaParts = [`Ouça ${name} ao vivo na Conexão FM.`, location, categoriesText ? `Estilos: ${categoriesText}.` : "", indexable ? pageDescription : ""].filter(Boolean);
   const metaDescription = metaParts.join(" ").slice(0, 155);
   const canonical = `${SITE}/radio/${slug}/`;
   const logo = safeHttps(station.logo_url);
@@ -245,7 +265,7 @@ export function buildStationPage(station) {
     "@context": "https://schema.org",
     "@type": "RadioStation",
     "name": name,
-    ...(pageDescription ? { "description": pageDescription } : {}),
+    ...(indexable && pageDescription ? { "description": pageDescription } : {}),
     ...(enrichment.slogan ? { "slogan": enrichment.slogan } : {}),
     ...(enrichment.founded ? { "foundingDate": enrichment.founded } : {}),
     ...(enrichment.telephone ? { "telephone": enrichment.telephone } : {}),
@@ -281,7 +301,7 @@ export function buildStationPage(station) {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#17213A">
-<meta name="robots" content="index,follow">
+<meta name="robots" content="${indexable ? "index,follow" : "noindex,follow"}">
 <title>${escapeHtml(title)}</title>
 <meta name="description" content="${escapeHtml(metaDescription)}">
 <link rel="canonical" href="${canonical}">
@@ -309,8 +329,7 @@ ${logoMarkup}
 <button class="listen" type="button" data-open-station-player data-station-id="${escapeHtml("db-" + slug)}">▶ Ouvir rádio</button>
 <p class="location">${escapeHtml(location || "Rádio online")}</p>
 ${tags ? `<ul class="tags" aria-label="Estilos musicais">${tags}</ul>` : ""}
-${pageDescription || enrichment.slogan ? `<section class="about" aria-labelledby="about-title"><h2 id="about-title">Sobre a ${escapeHtml(name)}</h2>${pageDescription ? `<p class="description">${escapeHtml(pageDescription)}</p>` : ""}${enrichment.slogan ? `<p class="description"><strong>${escapeHtml(enrichment.slogan)}</strong></p>` : ""}${enrichment.source_url ? `<p class="source">Informações consultadas em <a href="${escapeHtml(enrichment.source_url)}" rel="nofollow noopener noreferrer" target="_blank">${escapeHtml(enrichment.source_name || "site oficial da emissora")}</a>.</p>` : ""}</section>` : `<p class="description">Esta página reúne os dados disponíveis no catálogo da Conexão FM para identificar a emissora e facilitar o acesso à transmissão online.</p>`}
-${factsMarkup}
+\${pageDescription ? \`<section class="about" aria-labelledby="about-title"><h2 id="about-title">Informações da emissora</h2><p class="description">\${escapeHtml(pageDescription)}</p>\${enrichment.source_url ? \`<p class="source">Descrição consultada no <a href="\${escapeHtml(enrichment.source_url)}" rel="nofollow noopener noreferrer" target="_blank">\${escapeHtml(enrichment.source_name || "site oficial da emissora")}</a>.</p>\` : ""}</section>\` : catalogDescription ? \`<section class="about" aria-labelledby="catalog-title"><h2 id="catalog-title">Descrição cadastrada no catálogo</h2><p class="description">\${escapeHtml(catalogDescription)}</p><p class="source">Esta descrição foi enviada ao diretório e não foi confirmada pela emissora.</p></section>\` : \`<p class="description">Esta página reúne os dados disponíveis no catálogo para identificar a emissora e facilitar o acesso à transmissão online. As informações e a disponibilidade do áudio podem mudar; consulte também o site oficial, quando informado.</p>\`}${factsMarkup}
 ${website ? `<a class="website" href="${escapeHtml(website)}" target="_blank" rel="noopener noreferrer">Visitar o site da emissora ↗</a>` : ""}
 </article>
 <footer class="footer">Conexão FM — A música que conecta você · <a href="/privacidade.html">Privacidade</a> · <a href="/contato.html">Contato</a></footer>
@@ -348,7 +367,7 @@ ${website ? `<a class="website" href="${escapeHtml(website)}" target="_blank" re
 export function buildSitemap(existingXml, stations) {
   const base = existingXml.match(/<url>[\s\S]*?<\/url>/g) || [];
   const kept = base.filter(entry => !entry.includes("/radio/"));
-  const stationUrls = stations.map(station =>
+  const stationUrls = stations.filter(isIndexableStationPage).map(station =>
     `  <url><loc>${SITE}/radio/${station.slug}/</loc></url>`
   );
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${[...kept, ...stationUrls].join("\n")}\n</urlset>\n`;
