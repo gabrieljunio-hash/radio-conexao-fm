@@ -339,9 +339,10 @@ test("guias originais são indexáveis, acessíveis e incluídos no sitemap", as
 
 test("início apresenta os guias de conteúdo original", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByRole("link", { name: /Como funciona o catálogo/i })).toHaveAttribute("href", "catalogo-radio-online.html");
-  await expect(page.getByRole("link", { name: /Consumo de internet/i })).toHaveAttribute("href", "consumo-internet-radio-online.html");
-  await expect(page.getByRole("link", { name: /Guia para ouvir rádio online/i })).toHaveAttribute("href", "guia-radio-online.html");
+  const guides = page.locator(".editorial-home");
+  await expect(guides.getByRole("link", { name: /Como funciona o catálogo/i })).toHaveAttribute("href", "catalogo-radio-online.html");
+  await expect(guides.getByRole("link", { name: /Consumo de internet/i })).toHaveAttribute("href", "consumo-internet-radio-online.html");
+  await expect(guides.getByRole("link", { name: /Guia para ouvir rádio online/i })).toHaveAttribute("href", "guia-radio-online.html");
 });
 
 test("ads.txt declara corretamente o vendedor AdSense do site", async ({ request }) => {
