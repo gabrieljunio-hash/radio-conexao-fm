@@ -320,6 +320,30 @@ test("rota antiga de explorar redireciona para a visualização correta e não e
 });
 
 
+test("guias originais são indexáveis, acessíveis e incluídos no sitemap", async ({ page, request }) => {
+  const xml = await (await request.get("/sitemap.xml")).text();
+  for (const path of ["/catalogo-radio-online.html", "/consumo-internet-radio-online.html"]) {
+    expect(xml).toContain("https://radio-conexao-fm.pages.dev" + path);
+    await page.goto(path);
+    await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", "index,follow");
+    await expect(page.locator("h1")).toBeVisible();
+    await expect(page.getByRole("link", { name: /← Início/i })).toHaveAttribute("href", "index.html");
+  }
+  await page.goto("/catalogo-radio-online.html");
+  await expect(page.locator("body")).toContainText("Uma verificação não é uma garantia");
+  await expect(page.locator("body")).toContainText("A Conexão FM hospeda as músicas?");
+  await page.goto("/consumo-internet-radio-online.html");
+  await expect(page.locator("body")).toContainText("3,5 GB");
+  await expect(page.locator("body")).toContainText("Economia de dados");
+});
+
+test("início apresenta os guias de conteúdo original", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByRole("link", { name: /Como funciona o catálogo/i })).toHaveAttribute("href", "catalogo-radio-online.html");
+  await expect(page.getByRole("link", { name: /Consumo de internet/i })).toHaveAttribute("href", "consumo-internet-radio-online.html");
+  await expect(page.getByRole("link", { name: /Guia para ouvir rádio online/i })).toHaveAttribute("href", "guia-radio-online.html");
+});
+
 test("ads.txt declara corretamente o vendedor AdSense do site", async ({ request }) => {
   const response = await request.get("/ads.txt");
   expect(response.status()).toBe(200);
