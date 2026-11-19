@@ -89,6 +89,8 @@ test("busca descrição e dados no site oficial e em página interna Sobre", asy
   assert.match(html, /Descrição consultada no/);
   assert.match(html, /FM 98\.7/);
   assert.match(html, /Rádio Teste transmite jornalismo/);
+  assert.match(html, /<p class="description">A Rádio Teste transmite jornalismo/);
+  assert.doesNotMatch(html, /\\?\$\{pageDescription/);
 });
 
 test("usa o diretório Radio Browser para localizar o site oficial quando o cadastro não tem URL", async () => {
